@@ -742,6 +742,12 @@ trade-off is that a tab holding old chunks can need one reload.
 - `GET /api/auth/verify` consumes the token, finds/creates the user, links the current device
   ranch when the account has none, and creates a revocable session (`tr_session`, hashed at
   rest, 30-day sliding window).
+- Google sign-in is a second door to the same path: `/api/auth/google/start` stores an OAuth
+  `state` in a 10-minute httpOnly cookie and redirects to Google; `/api/auth/google/callback`
+  verifies the state, exchanges the code, requires `email_verified`, then calls the same
+  `resolveUser` / `resolveProfileForUser` helpers (and the `ensureOwnerEmail` bootstrap) before
+  creating a session. It needs no email delivery, only `GOOGLE_CLIENT_ID` /
+  `GOOGLE_CLIENT_SECRET` and `<site>/api/auth/google/callback` registered as a redirect URI.
 - `getActor()` checks the session first; if the account has no profile, the device ranch is
   linked. A device already owned by another account is never stolen. `withUser` remains a
   compatibility wrapper around the actor.

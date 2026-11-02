@@ -70,6 +70,9 @@ pre-1.0 and the format follows [Keep a Changelog](https://keepachangelog.com/).
   owner transfer, plus `admin_role_events` logs visible to both the owner and affected admin.
 - `pets.stat_overrides` raw stat overrides applied after nature/stars/care/evolution in both
   the roster view and battle combatants.
+- Google sign-in (`/api/auth/google/start` + `/api/auth/google/callback`) alongside magic
+  links, sharing the same account/profile linking and `OWNER_EMAIL` bootstrap. No email
+  delivery required; `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` enable it.
 - `/more` hub, seven feature screens, and Playwright coverage for the new hub pages.
 - CSRF origin guard now trusts Render's `x-forwarded-host` and `NEXT_PUBLIC_SITE_URL`,
   fixing `Invalid origin` on mutations behind the Render proxy.

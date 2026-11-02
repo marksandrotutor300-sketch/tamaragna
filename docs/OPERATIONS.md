@@ -462,6 +462,15 @@ at the profile.
   `DELETE /api/auth/account` removes the account but unlinks (does not delete) the ranch.
 - **Linking.** Opening the link with the device cookie links that ranch if the account has
   none. An account with an existing ranch keeps it; the device ranch is not merged.
+- **Google sign-in (optional, no email delivery needed).** Create an OAuth client in Google
+  Cloud Console → APIs & Services → Credentials → OAuth client ID → Web application. Add the
+  redirect URI `<site>/api/auth/google/callback` (for local dev also
+  `http://localhost:3000/api/auth/google/callback`). Set `GOOGLE_CLIENT_ID` and
+  `GOOGLE_CLIENT_SECRET`; `/signin` then shows **Continue with Google**. Google returns a
+  verified email, which is linked through the same `resolveUser` / `resolveProfileForUser`
+  path as a magic link, so it also bootstraps `OWNER_EMAIL`. A missing client ID hides the
+  button and `/api/auth/google/start` redirects to `/signin?error=google-unavailable`. The
+  `state` parameter is stored in a 10-minute httpOnly cookie and verified on callback.
 - **Push.** Generate VAPID keys (`npx web-push generate-vapid-keys`), set
   `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT`, then enable reminders on
   `/account` after installing the PWA. Schedule `POST /api/cron/reminders` with
