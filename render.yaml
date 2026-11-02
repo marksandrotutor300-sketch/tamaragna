@@ -1,0 +1,48 @@
+services:
+  - type: web
+    name: tamaragna
+    runtime: node
+    plan: free
+    autoDeployTrigger: commit
+    healthCheckPath: /api/health
+    buildCommand: npm ci --include=dev && npm run build && npm run db:migrate
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: POSTGRES_MAX
+        value: "1"
+      - key: NEXT_PUBLIC_SITE_URL
+        sync: false
+      - key: HOSTNAME
+        value: "0.0.0.0"
+      - key: TAMARAGNA_HTTPS
+        value: "1"
+      - key: AUTH_DEV_MODE
+        value: "0"
+      - key: FEATURE_SHARE
+        value: "1"
+      - key: FEATURE_TELEMETRY
+        value: "1"
+      - key: FEATURE_ACCOUNTS
+        value: "1"
+      - key: FEATURE_EVOLUTION
+        value: "1"
+      - key: FEATURE_LIVE_PVP
+        value: "1"
+      - key: LIVE_TOKEN_SECRET
+        generateValue: true
+      - key: ADMIN_TOKEN
+        generateValue: true
+      - key: CRON_SECRET
+        generateValue: true
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        sync: false

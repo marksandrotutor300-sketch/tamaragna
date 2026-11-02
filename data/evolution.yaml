@@ -1,0 +1,74 @@
+version: 1
+families:
+  - id: poring-guardian
+    name: Poring guardian line
+    species: [1002, 1031, 1242] # Poring -> Poporing -> Marin
+  - id: fabre-scout
+    name: Fabre scout line
+    species: [1007, 1052, 1011] # Fabre -> Rocker -> Chonchon
+  - id: lunatic-hunter
+    name: Lunatic hunter line
+    species: [1063, 1167, 1166] # Lunatic -> Savage Babe -> Savage
+  - id: ant-worker
+    name: Ant worker line
+    species: [1095, 1105, 1160] # Andre -> Deniro -> Piere
+  - id: willow-spirit
+    name: Willow spirit line
+    species: [1010, 1018, 1119] # Willow -> Creamy -> Frilldora
+  - id: thief-swarm
+    name: Thief bug swarm line
+    species: [1051, 1005, 1111] # Thief Bug -> Familiar -> Drainliar
+  - id: orc-warrior
+    name: Orc warrior line
+    species: [1023, 1189, 1213] # Orc Warrior -> Orc Archer -> High Orc
+  - id: kobold-raider
+    name: Kobold raider line
+    species: [1273, 1133, 1282] # Orc Lady -> Kobold -> Kobold Archer
+  - id: zombie-ghoul
+    name: Zombie ghoul line
+    species: [1015, 1036, 1291] # Zombie -> Ghoul -> Wraith Dead
+  - id: mummy-verit
+    name: Mummy verit line
+    species: [1041, 1032, 1192] # Mummy -> Verit -> Wraith
+  - id: dokebi-fox
+    name: Dokebi fox line
+    species: [1110, 1180, 1150] # Dokebi -> Nine Tail -> Moonlight Flower
+  - id: spore-bloom
+    name: Spore bloom line
+    species: [1055, 1077, 1014] # Muka -> Poison Spore -> Spore
+  - id: peco-rider
+    name: Peco rider line
+    species: [1009, 1019, 1369] # Condor -> Peco Peco -> Grand Peco
+  - id: baphomet-drake
+    name: Baphomet drake line
+    species: [1101, 1039, 1112] # Baphomet Jr. -> Baphomet -> Drake
+  - id: whisper-master
+    name: Whisper master line
+    species: [1179, 1120, 1090] # Whisper -> Ghostring -> Mastering
+  - id: spider-argos
+    name: Spider argos line
+    species: [1094, 1099, 1100] # Ambernite -> Argiope -> Argos
+  - id: bigfoot-goat
+    name: Bigfoot goat line
+    species: [1060, 1121, 1372] # Bigfoot -> Giearth -> Goat
+  - id: flora-geographer
+    name: Flora geographer line
+    species: [1118, 1500, 1368] # Flora -> Parasite -> Geographer
+  - id: marionette-succubus
+    name: Marionette succubus line
+    species: [1143, 1374, 1370] # Marionette -> Incubus -> Succubus
+  - id: zealotus-alice
+    name: Zealotus alice line
+    species: [1200, 1201, 1275] # Zealotus -> Rybio -> Alice
+  - id: wolf-maya
+    name: Wolf maya line
+    species: [1013, 1106, 1289] # Wolf -> Desert Wolf -> Maya Purple
+  - id: eddga-maya
+    name: Eddga maya line
+    species: [1115, 1159, 1147] # Eddga -> Phreeoni -> Maya
+  - id: deviling-angeling
+    name: Deviling angeling line
+    species: [1582, 1096, 1766] # Deviling -> Angeling -> Angeling (high)
+  - id: poring-drops-branch
+    name: Poring drops branch
+    species: [1002, 1113, 1242] # Poring -> Drops -> Marin (branch)
