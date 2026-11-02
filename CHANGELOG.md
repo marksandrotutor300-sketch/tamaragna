@@ -63,9 +63,12 @@ pre-1.0 and the format follows [Keep a Changelog](https://keepachangelog.com/).
 - Public repository at <https://github.com/marksandrotutor300-sketch/tamaragna> with a
   **Deploy to Render** button. `main` is the deploy branch; Render's
   `autoDeployTrigger: commit` rebuilds and migrates on every push.
+- Super-admin console at `/admin`, gated by `ADMIN_TOKEN` or an account flagged with
+  `users.is_super_admin` (`npm run admin:promote -- <email>`): player search, wallet edits,
+  pet generation (custom or random), pet stat edits, pet gifting and an `admin_audit_log`.
+- `pets.stat_overrides` raw stat overrides applied after nature/stars/care/evolution in both
+  the roster view and battle combatants.
 - `/more` hub, seven feature screens, and Playwright coverage for the new hub pages.
-- Super-admin console: player search, wallet edits, pet generation/editing/transfer,
-  per-stat overrides, audit log, and `npm run admin:promote`.
 - CSRF origin guard now trusts Render's `x-forwarded-host` and `NEXT_PUBLIC_SITE_URL`,
   fixing `Invalid origin` on mutations behind the Render proxy.
 

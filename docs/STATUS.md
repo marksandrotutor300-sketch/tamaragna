@@ -217,7 +217,7 @@ rating moves by the Elo delta, history shows the result, and a duplicate submiss
 
 ### M2–M6 program
 
-- `/api/health` reports `schemaVersion: "0006_seven_upgrades"` on a fresh database.
+- `/api/health` reports `schemaVersion: "0007_super_admin"` on a fresh database.
 - Accounts: magic-link sign-in linked the existing device ranch (`linked profile: true`);
   `/api/auth/session` returned the email; push subscription stored; cron returned
   `configured: false` without VAPID keys.

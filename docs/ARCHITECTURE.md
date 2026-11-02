@@ -228,6 +228,7 @@ DDL are kept in sync by hand.
 | `ivs` | jsonb | six values 0–31 |
 | `care` | jsonb | hunger/mood/energy/friendship/lastCareAt/sleeping |
 | `loadout` | jsonb nullable | four skill IDs; null = default three attacks + one support |
+| `stat_overrides` | jsonb nullable | admin-forced final stats applied after every multiplier |
 | `created_at` | timestamptz | |
 
 Index: `pets(owner_id, slot)`.
@@ -864,8 +865,25 @@ trade-off is that a tab holding old chunks can need one reload.
 ### 16.8 Verification
 
 - Vitest: 75 tests across the engine, genetics, sharing, telemetry, evolution, mastery, live
-  tickets, expeditions, habitats, legacy and the CSRF origin guard.
+  tickets, expeditions, habitats, legacy, stat overrides and the CSRF origin guard.
 - Playwright: 7 flows, including all seven new hub pages.
 - Fresh-database HTTP verification exercised every new flow: guild/raid, market sale, habitat
   purchase + visit, legacy retirement, dojo spar, expedition start, ranked cup with eight
   entrants, and a live spectator pick.
+
+### 16.9 Super-admin console
+
+- `/admin` accepts either the shared `ADMIN_TOKEN` query token or a signed-in account with
+  `users.is_super_admin`. `getAdminIdentity()` is the single resolver; nothing else in the app
+  has roles. `npm run admin:promote -- <email>` flips the flag (the account must have signed in
+  once), and `ADMIN_TOKEN` remains the bootstrap path.
+- `/api/admin/*` exposes player search, wallet edits, pet generation, pet stat edits and pet
+  gifting. Every mutation writes `admin_audit_log` (`actor_label`, `action`,
+  `target_profile_id`, `target_pet_id`, `detail`).
+- Stats stay derived. `pets.stat_overrides` holds admin-forced final values (`hpMax, atk,
+  matk, def, mdef, aspdMs, critChance, critMult, statusResist`) that `applyStatOverrides()`
+  applies after nature, stars, care and evolution stage in both `petView()` and
+  `buildCombatant()`, so the roster, PvP snapshots and battles all agree.
+- Gifting reuses the market-move rules: active listings are cancelled, `slot`, `market_listed`
+  and `expedition_id` are cleared, ownership is re-asserted in the UPDATE, and both players'
+  PvP snapshots are refreshed. The 30-pet cap applies to the receiving ranch.

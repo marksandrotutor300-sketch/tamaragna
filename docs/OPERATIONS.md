@@ -118,7 +118,7 @@ pets default to Hardy, 1★, stage 1 and the first three attacks plus one suppor
 migration is needed. New profiles join the highest season in use. `ensure-data` detects stale
 four-skill data and generates the evolution graph when missing.
 
-The current schema version is **`0006_seven_upgrades`**.
+The current schema version is **`0007_super_admin`**.
 
 ### Versioned migrations
 
@@ -535,3 +535,45 @@ All seven are covered by the fresh-DB verification run and `/more` Playwright te
 - Supabase Free has a 500 MB database, pauses after a week of inactivity and has no automated
   backups. Use it for a demo/small community, not ranked production.
 - Full steps and smoke checks: [DEPLOY-RENDER-SUPABASE.md](DEPLOY-RENDER-SUPABASE.md).
+
+## 20. Super-admin console
+
+`/admin` accepts two credentials:
+
+- `https://<host>/admin?token=$ADMIN_TOKEN` — the shared token, kept in the URL exactly like
+  `/admin/balance`. The page forwards it as `x-admin-token` on every API call.
+- A signed-in account whose `users.is_super_admin` is true — just open `/admin`. Such accounts
+  also get an “Admin console” card on `/more`.
+
+Grant the role once (the account must already exist from a magic-link sign-in):
+
+```bash
+npm run admin:promote -- you@example.com
+npm run admin:promote -- you@example.com --revoke
+```
+
+The console can search players by display name, public slug or profile UUID; edit coins, eggs,
+food, materials, legacy points and spectator points; generate pets (custom or random roll) with
+species, rarity, nature, level, stars and IVs; edit any pet's stored stats plus raw stat
+overrides; and gift any pet to another player. Gifting respects the 30-pet ranch cap and clears
+team slot, market listing and expedition state.
+
+| Route | Method | Purpose |
+| --- | --- | --- |
+| `/api/admin/players?q=` | GET | player search |
+| `/api/admin/players/:id` | GET / PATCH | detail / wallet |
+| `/api/admin/pets` | POST | generate a pet |
+| `/api/admin/pets/:id` | PATCH | stored stats and overrides |
+| `/api/admin/pets/:id/transfer` | POST | gift to another player |
+| `/api/admin/species?q=` | GET | playable species picker |
+| `/api/admin/audit` | GET | last 50 admin actions |
+
+Admin API calls use `x-admin-token` or the session cookie and fail with the same masked 404 as
+the other admin routes. Every mutation inserts an `admin_audit_log` row; the console renders the
+latest entries at the bottom. With `ADMIN_TOKEN` unset and no flagged account, `/admin` is
+unreachable.
+
+Raw overrides are final values: `hpMax`, `atk`, `matk`, `def`, `mdef`, `aspdMs`, `critChance`,
+`critMult` and `statusResist` replace the computed numbers after nature, stars, care and
+evolution are applied, in both the roster view and battle combatants. Leave a field blank to
+keep the derived value.

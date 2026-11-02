@@ -119,7 +119,7 @@ The build should run in this order:
 Expected signs of success:
 
 - Build log ends with a successful Next.js build.
-- Migration log applies `0006_seven_upgrades`.
+- Migration log applies `0007_super_admin`.
 - The service starts on Render’s assigned `PORT`.
 - `/api/health` returns `200` with:
 
@@ -127,7 +127,7 @@ Expected signs of success:
 {
   "status": "ok",
   "db": "ok",
-  "schemaVersion": "0006_seven_upgrades"
+  "schemaVersion": "0007_super_admin"
 }
 ```
 
