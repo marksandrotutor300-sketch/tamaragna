@@ -2,15 +2,20 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  Crown,
   Gift,
   Pencil,
   Plus,
   ScrollText,
   Search,
+  ShieldCheck,
   Sparkles,
+  Undo2,
+  UserMinus,
   Wallet,
 } from "lucide-react";
 import { Button, EmptyState, Panel, Pill, SectionTitle } from "@/components/ui/primitives";
+import type { AdminRole } from "@/lib/db/schema";
 
 type Player = {
   id: string;
@@ -60,6 +65,24 @@ type AuditEntry = {
   createdAt: string;
 };
 
+type RoleAccount = {
+  id: string;
+  email: string;
+  role: AdminRole | null;
+  createdAt: string;
+};
+
+type RoleEvent = {
+  id: string;
+  actorLabel: string;
+  targetEmail: string;
+  action: string;
+  previousRole: AdminRole | null;
+  newRole: AdminRole | null;
+  reason: string;
+  createdAt: string;
+};
+
 const IV_KEYS = ["str", "agi", "vit", "int", "dex", "luk"] as const;
 const NATURES = ["hardy", "brave", "bold", "timid", "modest", "calm", "jolly", "adamant"];
 const OVERRIDE_FIELDS: Array<[string, string]> = [
@@ -103,10 +126,12 @@ export function AdminConsole({
   initialToken,
   actor,
   via,
+  role,
 }: {
   initialToken: string;
   actor: string;
   via: "token" | "session";
+  role: AdminRole;
 }) {
   const [token, setToken] = useState(initialToken);
   const [busy, setBusy] = useState(false);
@@ -119,6 +144,11 @@ export function AdminConsole({
 
   const [wallet, setWallet] = useState<Record<string, string>>({});
   const [audit, setAudit] = useState<AuditEntry[]>([]);
+  const [accounts, setAccounts] = useState<RoleAccount[]>([]);
+  const [roleEvents, setRoleEvents] = useState<RoleEvent[]>([]);
+  const [grantEmail, setGrantEmail] = useState("");
+  const [ownerEmail, setOwnerEmail] = useState("");
+  const [roleReason, setRoleReason] = useState("");
 
   const [speciesQuery, setSpeciesQuery] = useState("");
   const [speciesResults, setSpeciesResults] = useState<Species[]>([]);
@@ -192,9 +222,78 @@ export function AdminConsole({
     }
   }, [request]);
 
+  const refreshRoles = useCallback(async () => {
+    try {
+      const body = await request<{ accounts: RoleAccount[]; events: RoleEvent[] }>(
+        "/api/admin/roles",
+      );
+      setAccounts(body.accounts);
+      setRoleEvents(body.events);
+    } catch {
+      setAccounts([]);
+      setRoleEvents([]);
+    }
+  }, [request]);
+
   useEffect(() => {
     void refreshAudit();
-  }, [refreshAudit]);
+    void refreshRoles();
+  }, [refreshAudit, refreshRoles]);
+
+  const grantRole = () =>
+    run(async () => {
+      if (!grantEmail.trim()) throw new Error("Enter the account email");
+      const body = await request<{ account: RoleAccount }>("/api/admin/roles", {
+        method: "POST",
+        body: JSON.stringify({ email: grantEmail.trim(), reason: roleReason.trim() }),
+      });
+      setNotice(`${body.account.email} is now an admin.`);
+      setGrantEmail("");
+      await refreshRoles();
+    });
+
+  const revokeRole = (account: RoleAccount) => {
+    if (!window.confirm(`Revoke admin access for ${account.email}?`)) return;
+    void run(async () => {
+      await request(`/api/admin/roles/${account.id}/revoke`, {
+        method: "POST",
+        body: JSON.stringify({ reason: roleReason.trim() }),
+      });
+      setNotice(`Revoked admin access for ${account.email}.`);
+      await refreshRoles();
+    });
+  };
+
+  const rollbackAccountRole = (account: RoleAccount) => {
+    if (!window.confirm(`Roll back the last role change for ${account.email}?`)) return;
+    void run(async () => {
+      const body = await request<{ account: RoleAccount }>(
+        `/api/admin/roles/${account.id}/rollback`,
+        {
+          method: "POST",
+          body: JSON.stringify({ reason: roleReason.trim() }),
+        },
+      );
+      setNotice(
+        `Rolled ${account.email} back to ${body.account.role ?? "no admin role"}.`,
+      );
+      await refreshRoles();
+    });
+  };
+
+  const transferOwnerRole = () => {
+    if (!ownerEmail.trim()) return;
+    if (!window.confirm(`Transfer owner to ${ownerEmail.trim()}? You will become an admin.`)) return;
+    void run(async () => {
+      await request("/api/admin/roles/owner", {
+        method: "POST",
+        body: JSON.stringify({ email: ownerEmail.trim(), reason: roleReason.trim() }),
+      });
+      setNotice(`Owner transferred to ${ownerEmail.trim()}.`);
+      setOwnerEmail("");
+      await refreshRoles();
+    });
+  };
 
   const search = () =>
     run(async () => {
@@ -377,6 +476,161 @@ export function AdminConsole({
       {notice ? <p className="mt-3 text-[11px] text-teal">{notice}</p> : null}
 
       <div className="mt-6 grid gap-4">
+        <Panel>
+          <SectionTitle hint={`${role} access`}>
+            <span className="inline-flex items-center gap-2">
+              <ShieldCheck className="h-3.5 w-3.5 text-gold" /> Admin roles
+            </span>
+          </SectionTitle>
+          {role === "owner" ? (
+            <>
+              <p className="mt-1 text-[11px] text-muted">
+                Grant admin access by account email. The account must have signed in with a
+                magic link once. Owners can revoke or roll back any admin, and every change is
+                logged for both accounts.
+              </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                <label className="grid gap-1">
+                  <span className={labelClass}>Account email</span>
+                  <input
+                    value={grantEmail}
+                    onChange={(event) => setGrantEmail(event.target.value)}
+                    placeholder="admin@example.com"
+                    className={inputClass}
+                  />
+                </label>
+                <label className="grid gap-1">
+                  <span className={labelClass}>Reason (optional)</span>
+                  <input
+                    value={roleReason}
+                    onChange={(event) => setRoleReason(event.target.value)}
+                    placeholder="why this change?"
+                    className={inputClass}
+                  />
+                </label>
+                <Button
+                  size="sm"
+                  onClick={() => void grantRole()}
+                  disabled={busy || !grantEmail.trim()}
+                >
+                  <Plus className="h-3.5 w-3.5" /> Grant admin
+                </Button>
+              </div>
+
+              <div className="mt-3 space-y-1">
+                {accounts.map((account) => (
+                  <div
+                    key={account.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line/60 bg-black/20 px-2 py-1.5 text-xs"
+                  >
+                    <span className="flex min-w-0 items-center gap-2">
+                      {account.role === "owner" ? (
+                        <Crown className="h-3.5 w-3.5 text-gold" />
+                      ) : account.role === "admin" ? (
+                        <ShieldCheck className="h-3.5 w-3.5 text-teal" />
+                      ) : null}
+                      <span className="truncate">{account.email}</span>
+                      <Pill>{account.role ?? "none"}</Pill>
+                    </span>
+                    {account.role === "admin" ? (
+                      <span className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => rollbackAccountRole(account)}
+                          disabled={busy}
+                        >
+                          <Undo2 className="h-3 w-3" /> Rollback
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => revokeRole(account)}
+                          disabled={busy}
+                        >
+                          <UserMinus className="h-3 w-3" /> Revoke
+                        </Button>
+                      </span>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-4 border-t border-line/40 pt-3">
+                <div className="text-[10px] uppercase tracking-[0.15em] text-muted">
+                  transfer ownership
+                </div>
+                <p className="mt-1 text-[10px] text-muted">
+                  This makes the target the single owner and demotes you to admin. Only do this
+                  from the account or token you want to hand off.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <input
+                    value={ownerEmail}
+                    onChange={(event) => setOwnerEmail(event.target.value)}
+                    placeholder="new-owner@example.com"
+                    className={`${inputClass} w-64`}
+                  />
+                  <Button
+                    size="sm"
+                    variant="gold"
+                    onClick={() => transferOwnerRole()}
+                    disabled={busy || !ownerEmail.trim()}
+                  >
+                    <Crown className="h-3.5 w-3.5" /> Transfer owner
+                  </Button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <p className="mt-1 text-[11px] text-muted">
+              You have admin access. Only the owner can grant, revoke or roll back admin roles.
+              Your access history is shown below.
+            </p>
+          )}
+
+          <div className="mt-4">
+            <div className="text-[10px] uppercase tracking-[0.15em] text-muted">
+              role event log
+            </div>
+            <div className="mt-2 overflow-x-auto">
+              <table className="w-full text-left text-[11px]">
+                <thead className="text-muted">
+                  <tr>
+                    <th className="py-1">When</th>
+                    <th className="py-1">Actor</th>
+                    <th className="py-1">Target</th>
+                    <th className="py-1">Change</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {roleEvents.map((event) => (
+                    <tr key={event.id} className="border-t border-line/40">
+                      <td className="py-1 tabular-nums text-muted">
+                        {new Date(event.createdAt).toLocaleString()}
+                      </td>
+                      <td className="py-1">{event.actorLabel}</td>
+                      <td className="py-1">{event.targetEmail}</td>
+                      <td className="py-1">
+                        {event.action} · {event.previousRole ?? "none"} →{" "}
+                        {event.newRole ?? "none"}
+                        {event.reason ? <span className="text-muted"> · {event.reason}</span> : null}
+                      </td>
+                    </tr>
+                  ))}
+                  {roleEvents.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="py-3 text-muted">
+                        No role changes yet.
+                      </td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </Panel>
+
         <Panel>
           <SectionTitle hint="search by slug, name or profile id">Find player</SectionTitle>
           <div className="mt-2 flex gap-2">

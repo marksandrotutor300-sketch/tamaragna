@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { NextResponse, type NextRequest } from "next/server";
 import { consumeMagicToken } from "@/lib/auth/magic";
+import { ensureOwnerEmail } from "@/lib/admin";
 import { createProfile, getProfile, setDeviceCookie } from "@/lib/db/auth";
 import { getDb } from "@/lib/db/client";
 import { profiles, users } from "@/lib/db/schema";
@@ -71,6 +72,8 @@ export async function GET(request: NextRequest): Promise<Response> {
       await setDeviceCookie(profile.deviceId);
     }
   }
+
+  await ensureOwnerEmail(user.id, user.email);
 
   await createSession(user.id, {
     userAgent: request.headers.get("user-agent"),

@@ -396,6 +396,8 @@ Profiles gain nullable `public_slug` (partial unique) and `public_card` (opt-in)
 - `ranch_visits`.
 - `ranked_cups` (linked to `tournaments`) and `spectator_picks`.
 - `legacy_marks`, `dojo_ghosts`, `dojo_runs`.
+- `admin_audit_log` and `admin_role_events` (owner/admin changes with actor, target, previous
+  role, new role, reason and timestamp).
 
 Additional indexes: `battles(opponent_snapshot_id)`, `battles(status)`,
 `tower_runs(status, highest_wave, elapsed_ms)`, `pvp_snapshots(season, rating)`.
@@ -477,6 +479,10 @@ All routes are Node runtime and validate input with Zod. Errors return
 | `POST/PATCH` | `/api/admin/pets`, `/api/admin/pets/:id` | Create/edit pets and overrides |
 | `POST` | `/api/admin/pets/:id/transfer` | Transfer pet ownership |
 | `GET` | `/api/admin/audit` | Recent audit entries |
+| `GET/POST` | `/api/admin/roles` | Role log / grant admin by email |
+| `POST` | `/api/admin/roles/:userId/revoke` | Revoke admin |
+| `POST` | `/api/admin/roles/:userId/rollback` | Roll back last role change |
+| `POST` | `/api/admin/roles/owner` | Transfer owner |
 | `POST` | `/api/pets/:id/care` | `feed` / `play` / `rest` / `wake` / `train` |
 | `POST` | `/api/hatch` | `{ kind: "wild" \| "focused", focusElement? }` |
 | `POST` | `/api/breed` | `{ parentA, parentB }` → inherited child |
@@ -864,22 +870,28 @@ trade-off is that a tab holding old chunks can need one reload.
 
 ### 16.8 Verification
 
-- Vitest: 75 tests across the engine, genetics, sharing, telemetry, evolution, mastery, live
+- Vitest: 82 tests across the engine, genetics, sharing, telemetry, evolution, mastery, live
   tickets, expeditions, habitats, legacy, stat overrides and the CSRF origin guard.
 - Playwright: 7 flows, including all seven new hub pages.
 - Fresh-database HTTP verification exercised every new flow: guild/raid, market sale, habitat
   purchase + visit, legacy retirement, dojo spar, expedition start, ranked cup with eight
   entrants, and a live spectator pick.
 
-### 16.9 Super-admin console
+### 16.9 Owner/admin console
 
-- `/admin` accepts either the shared `ADMIN_TOKEN` query token or a signed-in account with
-  `users.is_super_admin`. `getAdminIdentity()` is the single resolver; nothing else in the app
-  has roles. `npm run admin:promote -- <email>` flips the flag (the account must have signed in
-  once), and `ADMIN_TOKEN` remains the bootstrap path.
+- `/admin` accepts either the shared `ADMIN_TOKEN` (owner bootstrap identity), an owner account,
+  or an admin account. `users.admin_role` is `owner`, `admin` or null; `is_super_admin` is kept
+  in sync for compatibility. The oldest legacy super admin becomes owner in migration
+  `0008_admin_roles`; after that, only the owner (or token) can change roles.
+- `OWNER_EMAIL` promotes the matching magic-link account only when no owner exists. That keeps
+  the bootstrap safe while allowing an explicit owner transfer to stick.
+- `/api/admin/roles` is owner-only for mutations: grant by account email, revoke, rollback the
+  target's last role event, and transfer ownership (demotes the current owner to admin).
+- Every role change writes `admin_role_events` (`actor`, `target_email`, action, previous/new
+  role, reason, timestamp). Owners see all events; an admin sees events involving their own
+  account. Normal admin mutations still write `admin_audit_log`.
 - `/api/admin/*` exposes player search, wallet edits, pet generation, pet stat edits and pet
-  gifting. Every mutation writes `admin_audit_log` (`actor_label`, `action`,
-  `target_profile_id`, `target_pet_id`, `detail`).
+  gifting. Every mutation writes an audit row.
 - Stats stay derived. `pets.stat_overrides` holds admin-forced final values (`hpMax, atk,
   matk, def, mdef, aspdMs, critChance, critMult, statusResist`) that `applyStatOverrides()`
   applies after nature, stars, care and evolution stage in both `petView()` and

@@ -381,6 +381,43 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX IF NOT EXISTS admin_audit_log_created_idx ON admin_audit_log (created_at);
     `,
   },
+  {
+    version: "0008_admin_roles",
+    name: "owner/admin hierarchy and role event log",
+    sql: `
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_role text;
+
+      UPDATE users
+      SET admin_role = 'admin'
+      WHERE is_super_admin = true AND admin_role IS NULL;
+
+      UPDATE users
+      SET admin_role = 'owner'
+      WHERE id = (
+        SELECT id FROM users
+        WHERE admin_role = 'admin'
+        ORDER BY created_at ASC
+        LIMIT 1
+      );
+
+      CREATE TABLE IF NOT EXISTS admin_role_events (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        actor_user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+        actor_label text NOT NULL,
+        target_user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        target_email text NOT NULL,
+        action text NOT NULL,
+        previous_role text,
+        new_role text,
+        reason text NOT NULL DEFAULT '',
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS admin_role_events_target_idx
+        ON admin_role_events (target_user_id, created_at);
+      CREATE INDEX IF NOT EXISTS admin_role_events_actor_idx
+        ON admin_role_events (actor_user_id, created_at);
+    `,
+  },
 ];
 
 function splitStatements(source: string): string[] {

@@ -63,9 +63,11 @@ pre-1.0 and the format follows [Keep a Changelog](https://keepachangelog.com/).
 - Public repository at <https://github.com/marksandrotutor300-sketch/tamaragna> with a
   **Deploy to Render** button. `main` is the deploy branch; Render's
   `autoDeployTrigger: commit` rebuilds and migrates on every push.
-- Super-admin console at `/admin`, gated by `ADMIN_TOKEN` or an account flagged with
-  `users.is_super_admin` (`npm run admin:promote -- <email>`): player search, wallet edits,
-  pet generation (custom or random), pet stat edits, pet gifting and an `admin_audit_log`.
+- Super-admin console at `/admin`, gated by `ADMIN_TOKEN` or a staff account: player search,
+  wallet edits, pet generation (custom or random), pet stat edits, pet gifting and an
+  `admin_audit_log`.
+- Owner/admin role hierarchy: `OWNER_EMAIL` bootstrap, owner-only grant/revoke/rollback and
+  owner transfer, plus `admin_role_events` logs visible to both the owner and affected admin.
 - `pets.stat_overrides` raw stat overrides applied after nature/stars/care/evolution in both
   the roster view and battle combatants.
 - `/more` hub, seven feature screens, and Playwright coverage for the new hub pages.
@@ -101,7 +103,7 @@ pre-1.0 and the format follows [Keep a Changelog](https://keepachangelog.com/).
 - Live rooms are single-instance and in-memory; PartyKit/durable rooms remain the production
   follow-up.
 - Added `web-push` and its types for VAPID delivery.
-- The Vitest suite grew from 19 to 75 tests; Playwright now covers 7 flows.
+- The Vitest suite grew from 19 to 82 tests; Playwright now covers 7 flows.
 - The production build is 1.03 MB client JS; the worker precaches 53 entries (~1.28 MB).
 - The CSRF origin guard now accepts Render's `x-forwarded-host` and the configured
   `NEXT_PUBLIC_SITE_URL`, fixing `Invalid origin` on mutations behind the Render proxy.

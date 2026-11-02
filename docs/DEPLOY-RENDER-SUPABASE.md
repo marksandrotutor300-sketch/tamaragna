@@ -90,8 +90,10 @@ schema through the pooler.
    - `LIVE_TOKEN_SECRET`
    - `ADMIN_TOKEN`
    - `CRON_SECRET`
-7. Confirm the service uses the **Free** instance plan and a single instance.
-8. Click **Create Blueprint** / **Apply**.
+7. Set `OWNER_EMAIL` to the email you will use for magic-link sign-in. This makes that account
+   the owner only when no owner exists yet. You can change it later in Render → Environment.
+8. Confirm the service uses the **Free** instance plan and a single instance.
+9. Click **Create Blueprint** / **Apply**.
 
 The Blueprint has:
 
@@ -119,7 +121,7 @@ The build should run in this order:
 Expected signs of success:
 
 - Build log ends with a successful Next.js build.
-- Migration log applies `0007_super_admin`.
+- Migration log applies `0008_admin_roles`.
 - The service starts on Render’s assigned `PORT`.
 - `/api/health` returns `200` with:
 
@@ -127,7 +129,7 @@ Expected signs of success:
 {
   "status": "ok",
   "db": "ok",
-  "schemaVersion": "0007_super_admin"
+  "schemaVersion": "0008_admin_roles"
 }
 ```
 
@@ -147,8 +149,10 @@ Canonical URLs, sitemap entries, share links, and OG metadata use this value.
 ## 5. Configure the operator settings
 
 1. Copy the generated `ADMIN_TOKEN` from Render’s Environment page.
-2. Use `/admin/balance?token=...` for telemetry and for creating ranked cups.
-3. Keep `ADMIN_TOKEN` private; do not put it in a public URL.
+2. Use `/admin?token=...` for the operator console and role management. Keep the token private.
+3. **Make your account the owner** using one of these:
+   - Set `OWNER_EMAIL` to your magic-link email and sign in; or
+   - Open `/admin?token=...`, enter your email under **Transfer owner**, then sign in.
 4. Optional magic-link email:
    - Create a Resend API key and verify your sending domain.
    - Set `RESEND_API_KEY` and `EMAIL_FROM`.

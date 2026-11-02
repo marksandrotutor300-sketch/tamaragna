@@ -62,7 +62,7 @@ it is **not** hardened for adversarial scale — see [Known limitations](#known-
 | Habitats + visits | ✅ Done | Four themes, material costs, public ranch visits and visit counts |
 | Ranked circuit + picks | ✅ Done | Ladder, admin cups linked to tournaments, spectator winner picks |
 | Legacy + ghost dojo | ✅ Done | Retirement marks/IV inheritance and team/last-opponent ghost sparring |
-| Super-admin console | ✅ Done | Player search, wallet, pet create/edit/transfer, stat overrides, audit log |
+| Super-admin console | ✅ Done | Owner/admin hierarchy, grant/revoke/rollback, role event logs, audit log |
 | Render + Supabase config | ✅ Done | `render.yaml`, pooler-safe DB pool, free deployment guide |
 | Security headers + CSRF | ✅ Done | CSP, nosniff, frame deny, referrer, permissions; Origin check on API mutations |
 | Rate limits | ✅ Done | DB-backed fixed windows on hatch, care, matchmaking, claims and transfers |
@@ -97,7 +97,7 @@ encountered in the tower.
 | --- | --- |
 | `npx tsc --noEmit` | clean |
 | `npm run lint` | clean |
-| `npx vitest run` | 75/75 passing |
+| `npx vitest run` | 82/82 passing |
 | `npm run data:validate` | all checks passing |
 | `npm run build` | compiled successfully; all static pages generated |
 | PWA worker | `/serwist/sw.js` prerendered at build; 53 precache entries (~1.28 MB) |
@@ -217,7 +217,7 @@ rating moves by the Elo delta, history shows the result, and a duplicate submiss
 
 ### M2–M6 program
 
-- `/api/health` reports `schemaVersion: "0007_super_admin"` on a fresh database.
+- `/api/health` reports `schemaVersion: "0008_admin_roles"` on a fresh database.
 - Accounts: magic-link sign-in linked the existing device ranch (`linked profile: true`);
   `/api/auth/session` returned the email; push subscription stored; cron returned
   `configured: false` without VAPID keys.
@@ -255,6 +255,19 @@ Fresh-database verification passed every step:
 
 Playwright now also renders `/more`, `/guild`, `/market`, `/expeditions`, `/ranked`,
 `/legacy` and `/dojo` (7/7 total).
+
+### Owner/admin roles
+
+The role lifecycle was exercised against a fresh database:
+
+- `OWNER_EMAIL` auto-promoted the owner account and did not re-take ownership after a handoff.
+- Owner granted admin by email; the admin opened `/api/admin/roles` and saw their own grant event.
+- Admin role-management attempt was rejected with 403.
+- Owner revoked the admin; the account immediately lost console access.
+- Owner rolled back the revoke; access and the rollback event returned.
+- Owner transferred ownership; the old owner became admin and both events were logged.
+- The `ADMIN_TOKEN` bootstrap restored the original owner.
+- Role history retained every grant, revoke, rollback, transfer and demotion.
 
 ### Manual browser checks
 
@@ -437,6 +450,15 @@ covers seven flows, including the new upgrade hub pages (see limitation 52).
 62. **The Render/Supabase deployment is configured, not provisioned.** `render.yaml` and the
     guide are in the repo; creating the services, setting the pooler URI and assigning the
     public URL require your Render and Supabase accounts.
+63. **The owner is singular.** `OWNER_EMAIL` bootstraps only when no owner exists; explicit
+    transfer demotes the previous owner to admin. The `ADMIN_TOKEN` is an owner-level bootstrap
+    identity, so protect it like a password.
+64. **Admin grants require an existing account.** The target must have signed in with a magic
+    link once; device-only profiles cannot open the admin console.
+65. **Revoked admins lose access to their role log.** Events remain stored and visible to the
+    owner; there is no separate account-facing audit page yet.
+66. **Role changes are logged, not notified.** There is no email/push notification on grant or
+    revoke yet; owners and active admins see `admin_role_events` in the console.
 
 ## Next steps
 

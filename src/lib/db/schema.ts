@@ -22,6 +22,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
   isSuperAdmin: boolean("is_super_admin").notNull().default(false),
+  adminRole: text("admin_role").$type<AdminRole | null>(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
@@ -210,6 +211,7 @@ export const seasonRewards = pgTable(
   ],
 );
 
+export type User = typeof users.$inferSelect;
 export type Profile = typeof profiles.$inferSelect;
 export type SeasonMeta = typeof seasons.$inferSelect;
 export type Pet = typeof pets.$inferSelect;
@@ -725,6 +727,34 @@ export type BattlePayload = {
   maxMs?: number;
   wave?: number;
 };
+
+export type AdminRole = "owner" | "admin";
+
+export const adminRoleEvents = pgTable(
+  "admin_role_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    actorUserId: uuid("actor_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    actorLabel: text("actor_label").notNull(),
+    targetUserId: uuid("target_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    targetEmail: text("target_email").notNull(),
+    action: text("action").notNull(),
+    previousRole: text("previous_role").$type<AdminRole | null>(),
+    newRole: text("new_role").$type<AdminRole | null>(),
+    reason: text("reason").notNull().default(""),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("admin_role_events_target_idx").on(table.targetUserId, table.createdAt),
+    index("admin_role_events_actor_idx").on(table.actorUserId, table.createdAt),
+  ],
+);
+
+export type AdminRoleEvent = typeof adminRoleEvents.$inferSelect;
 
 export type TowerTeamState = {
   combatants: CombatantInit[];

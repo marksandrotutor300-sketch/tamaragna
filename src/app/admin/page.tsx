@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { isSuperAdminUser } from "@/lib/admin";
+import { getAdminRoleForUser } from "@/lib/admin";
+import type { AdminRole } from "@/lib/db/schema";
 import { readSession } from "@/lib/db/session";
 import { AdminConsole } from "./AdminConsole";
 
@@ -14,13 +15,20 @@ export default async function AdminPage({
   const envToken = process.env.ADMIN_TOKEN;
   const viaToken = Boolean(token && envToken && token === envToken);
 
-  let identity: { label: string; via: "token" | "session" } | null = null;
+  let identity: {
+    label: string;
+    via: "token" | "session";
+    role: AdminRole;
+  } | null = null;
   if (viaToken) {
-    identity = { label: "ADMIN_TOKEN", via: "token" };
+    identity = { label: "ADMIN_TOKEN", via: "token", role: "owner" };
   } else {
     const session = await readSession();
-    if (session && (await isSuperAdminUser(session.userId))) {
-      identity = { label: session.email, via: "session" };
+    const role = session
+      ? await getAdminRoleForUser(session.userId, session.email)
+      : null;
+    if (session && role) {
+      identity = { label: session.email, via: "session", role };
     }
   }
 
@@ -31,6 +39,7 @@ export default async function AdminPage({
       initialToken={viaToken ? (token ?? "") : ""}
       actor={identity.label}
       via={identity.via}
+      role={identity.role}
     />
   );
 }

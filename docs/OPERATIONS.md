@@ -70,10 +70,11 @@ Copy `.env.example` to `.env` to override defaults.
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | Public origin for canonical URLs, sitemap, OG and share links |
 | `FEATURE_SHARE` / `FEATURE_TELEMETRY` / `FEATURE_ACCOUNTS` / `FEATURE_EVOLUTION` / `FEATURE_LIVE_PVP` | `1` | Set a flag to `0` to hide that system |
 | `AUTH_DEV_MODE` | unset | Set to `1` to return magic links in the API response for local tests |
+| `OWNER_EMAIL` | unset | Bootstrap account email; becomes owner only when no owner exists |
 | `RESEND_API_KEY` / `EMAIL_FROM` | unset | Magic-link delivery; without them the link is logged |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | unset | Web Push delivery |
 | `CRON_SECRET` | unset | Required by `POST /api/cron/reminders` |
-| `ADMIN_TOKEN` | unset | Gates `/admin/balance`, aggregation and the dev seed helper |
+| `ADMIN_TOKEN` | unset | Gates `/admin`, `/admin/balance`, aggregation and the dev seed helper |
 | `LIVE_TOKEN_SECRET` | dev fallback | HMAC secret for live player/spectator tickets |
 
 Recommended for production: `DATABASE_URL` plus either the default asset provider or a
@@ -113,12 +114,14 @@ The DDL also adds `pets.nature`, `pets.star`, `pets.loadout`, `pets.evolution_st
 `analytics_events`, `balance_daily`, `pet_skill_mastery`, `live_matches`, `matchmaking_queue`,
 `tournaments`, `tournament_entries`, `tournament_matches`, `guilds`, `guild_members`,
 `guild_raids`, `guild_contributions`, `market_listings`, `expeditions`, `ranch_visits`,
-`ranked_cups`, `spectator_picks`, `legacy_marks`, `dojo_ghosts` and `dojo_runs`. Existing
-pets default to Hardy, 1★, stage 1 and the first three attacks plus one support; no manual
+`ranked_cups`, `spectator_picks`, `legacy_marks`, `dojo_ghosts`, `dojo_runs`,
+`admin_audit_log` and `admin_role_events`. Migration `0008_admin_roles` adds
+`users.admin_role` and the role-event table; the oldest legacy super admin becomes owner.
+Existing pets default to Hardy, 1★, stage 1 and the first three attacks plus one support; no manual
 migration is needed. New profiles join the highest season in use. `ensure-data` detects stale
 four-skill data and generates the evolution graph when missing.
 
-The current schema version is **`0007_super_admin`**.
+The current schema version is **`0008_admin_roles`**.
 
 ### Versioned migrations
 
@@ -536,21 +539,51 @@ All seven are covered by the fresh-DB verification run and `/more` Playwright te
   backups. Use it for a demo/small community, not ranked production.
 - Full steps and smoke checks: [DEPLOY-RENDER-SUPABASE.md](DEPLOY-RENDER-SUPABASE.md).
 
-## 20. Super-admin console
+## 20. Owner/admin console and role hierarchy
 
-`/admin` accepts two credentials:
+There are exactly two staff roles:
 
-- `https://<host>/admin?token=$ADMIN_TOKEN` — the shared token, kept in the URL exactly like
-  `/admin/balance`. The page forwards it as `x-admin-token` on every API call.
-- A signed-in account whose `users.is_super_admin` is true — just open `/admin`. Such accounts
-  also get an “Admin console” card on `/more`.
+- **owner** — one account (plus the `ADMIN_TOKEN` bootstrap identity). Can grant/revoke
+  admins, roll back the last role change for an admin, transfer ownership, and use every admin
+  action.
+- **admin** — can use the console and admin APIs, but cannot grant, revoke, roll back or
+  transfer ownership. Admins can see role events where they are the actor or target.
 
-Grant the role once (the account must already exist from a magic-link sign-in):
+`/admin` accepts:
+
+- `https://<host>/admin?token=$ADMIN_TOKEN` — the shared bootstrap token, treated as owner.
+- A signed-in owner or admin account — just open `/admin`. Such accounts get an “Admin
+  console” card on `/more`.
+
+### Bootstrap and transfer
+
+Set `OWNER_EMAIL` in Render to the email you use for magic-link sign-in, then sign in. It
+promotes that account only when no owner exists, so it cannot re-take ownership after an
+explicit transfer. Alternatively, use the token console’s **Transfer owner** form; the target
+must have signed in once.
+
+The CLI is still available for local/DB access:
 
 ```bash
+npm run admin:promote -- you@example.com --owner
 npm run admin:promote -- you@example.com
 npm run admin:promote -- you@example.com --revoke
 ```
+
+### Role management
+
+Owners use **Admin roles** in `/admin`:
+
+- **Grant admin** by account email.
+- **Revoke** immediately removes admin access.
+- **Rollback** re-applies the role from the target’s previous role event (for example, undo a
+  revoke or a grant).
+- **Transfer owner** demotes the current owner to admin and makes the target the single owner.
+
+Every role mutation writes an `admin_role_events` row with actor, target email, previous role,
+new role, reason and timestamp. Owners see all events; an admin sees events involving their
+own account. Normal admin actions still go to `admin_audit_log` and remain visible in the
+console.
 
 The console can search players by display name, public slug or profile UUID; edit coins, eggs,
 food, materials, legacy points and spectator points; generate pets (custom or random roll) with
@@ -560,6 +593,10 @@ team slot, market listing and expedition state.
 
 | Route | Method | Purpose |
 | --- | --- | --- |
+| `/api/admin/roles` | GET / POST | role log / grant by email |
+| `/api/admin/roles/:userId/revoke` | POST | revoke admin |
+| `/api/admin/roles/:userId/rollback` | POST | rollback last role event |
+| `/api/admin/roles/owner` | POST | transfer owner |
 | `/api/admin/players?q=` | GET | player search |
 | `/api/admin/players/:id` | GET / PATCH | detail / wallet |
 | `/api/admin/pets` | POST | generate a pet |
@@ -568,10 +605,8 @@ team slot, market listing and expedition state.
 | `/api/admin/species?q=` | GET | playable species picker |
 | `/api/admin/audit` | GET | last 50 admin actions |
 
-Admin API calls use `x-admin-token` or the session cookie and fail with the same masked 404 as
-the other admin routes. Every mutation inserts an `admin_audit_log` row; the console renders the
-latest entries at the bottom. With `ADMIN_TOKEN` unset and no flagged account, `/admin` is
-unreachable.
+Role-management routes are owner-only; admin attempts return the same masked 404 as other admin
+routes. With `ADMIN_TOKEN` unset and no owner account, `/admin` is unreachable.
 
 Raw overrides are final values: `hpMax`, `atk`, `matk`, `def`, `mdef`, `aspdMs`, `critChance`,
 `critMult` and `statusResist` replace the computed numbers after nature, stars, care and

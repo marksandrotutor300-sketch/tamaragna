@@ -20,6 +20,8 @@ services:
         value: "1"
       - key: AUTH_DEV_MODE
         value: "0"
+      - key: OWNER_EMAIL
+        sync: false
       - key: FEATURE_SHARE
         value: "1"
       - key: FEATURE_TELEMETRY
