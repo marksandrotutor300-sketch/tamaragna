@@ -64,6 +64,10 @@ pre-1.0 and the format follows [Keep a Changelog](https://keepachangelog.com/).
   **Deploy to Render** button. `main` is the deploy branch; Render's
   `autoDeployTrigger: commit` rebuilds and migrates on every push.
 - `/more` hub, seven feature screens, and Playwright coverage for the new hub pages.
+- Super-admin console: player search, wallet edits, pet generation/editing/transfer,
+  per-stat overrides, audit log, and `npm run admin:promote`.
+- CSRF origin guard now trusts Render's `x-forwarded-host` and `NEXT_PUBLIC_SITE_URL`,
+  fixing `Invalid origin` on mutations behind the Render proxy.
 
 ### Changed
 
@@ -94,8 +98,10 @@ pre-1.0 and the format follows [Keep a Changelog](https://keepachangelog.com/).
 - Live rooms are single-instance and in-memory; PartyKit/durable rooms remain the production
   follow-up.
 - Added `web-push` and its types for VAPID delivery.
-- The Vitest suite grew from 19 to 70 tests; Playwright now covers 7 flows.
+- The Vitest suite grew from 19 to 75 tests; Playwright now covers 7 flows.
 - The production build is 1.03 MB client JS; the worker precaches 53 entries (~1.28 MB).
+- The CSRF origin guard now accepts Render's `x-forwarded-host` and the configured
+  `NEXT_PUBLIC_SITE_URL`, fixing `Invalid origin` on mutations behind the Render proxy.
 - Render Free is the current public deployment target (single instance, sleeping); Supabase
   Free supplies the Postgres pooler. Durable rooms remain the production follow-up.
 

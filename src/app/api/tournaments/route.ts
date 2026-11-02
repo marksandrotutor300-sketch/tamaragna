@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { adminGuard } from "@/lib/admin";
-import { fail, ok, parseBody } from "@/lib/api";
+import { superAdminGuard } from "@/lib/admin";
+import { ok, parseBody } from "@/lib/api";
 import { getDb } from "@/lib/db/client";
 import { tournaments } from "@/lib/db/schema";
 import { currentSeason } from "@/lib/db/auth";
@@ -25,14 +25,11 @@ export async function POST(request: Request): Promise<Response> {
   const disabled = featureUnavailable("livePvp");
   if (disabled) return disabled;
 
-  const guard = adminGuard(request);
+  const guard = await superAdminGuard(request);
   if (guard) return guard;
 
   const parsed = await parseBody(request, schema);
   if ("error" in parsed) return parsed.error;
-  if (!process.env.ADMIN_TOKEN) {
-    return fail("ADMIN_TOKEN is not configured", 404);
-  }
 
   const db = await getDb();
   const inserted = await db

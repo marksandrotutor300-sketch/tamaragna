@@ -14,12 +14,14 @@ import {
 } from "drizzle-orm/pg-core";
 import type { CareState, Ivs } from "@/lib/game/types";
 import type { QuestState } from "@/lib/game/quests";
+import type { StatOverrides } from "@/lib/game/stats";
 import type { BattleInput, BattleResult, CombatantInit } from "@/lib/sim/types";
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
   emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
+  isSuperAdmin: boolean("is_super_admin").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
@@ -82,6 +84,7 @@ export const pets = pgTable(
     marketListed: boolean("market_listed").notNull().default(false),
     expeditionId: uuid("expedition_id"),
     legacyTrait: text("legacy_trait"),
+    statOverrides: jsonb("stat_overrides").$type<StatOverrides | null>(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -693,6 +696,22 @@ export const idempotencyKeys = pgTable("idempotency_keys", {
   response: jsonb("response").$type<Record<string, unknown>>().notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const adminAuditLog = pgTable(
+  "admin_audit_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    actorLabel: text("actor_label").notNull(),
+    action: text("action").notNull(),
+    targetProfileId: uuid("target_profile_id"),
+    targetPetId: uuid("target_pet_id"),
+    detail: jsonb("detail").$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("admin_audit_log_created_idx").on(table.createdAt)],
+);
+
+export type AdminAuditEntry = typeof adminAuditLog.$inferSelect;
 
 export type Session = typeof sessions.$inferSelect;
 export type PushSubscription = typeof pushSubscriptions.$inferSelect;

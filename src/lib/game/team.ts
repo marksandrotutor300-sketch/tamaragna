@@ -21,6 +21,7 @@ export type TeamPet = Pick<
   | "nature"
   | "star"
   | "loadout"
+  | "statOverrides"
 > & { evolutionStage?: number; mastery?: Record<number, number> };
 
 export async function loadTeamPets(
@@ -62,6 +63,7 @@ export function petToCombatant(pet: TeamPet, hp?: number): CombatantInit {
       loadout: pet.loadout,
       evolutionStage: pet.evolutionStage,
       mastery: pet.mastery,
+      statOverrides: pet.statOverrides,
     },
     species,
   );

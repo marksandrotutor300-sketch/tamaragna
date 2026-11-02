@@ -6,7 +6,7 @@ import { NATURES, type NatureId } from "./nature";
 import { masteryPowerMultiplier } from "./mastery";
 import { RARITY } from "./rarity";
 import { skillLevelFor, resolveSkill, normalizeLoadout } from "./skills";
-import { computeStats } from "./stats";
+import { computeStats, applyStatOverrides, type StatOverrides } from "./stats";
 import type { CareState, GeneratedSpecies, Ivs, Rarity } from "./types";
 
 export type Livestock = {
@@ -22,6 +22,7 @@ export type Livestock = {
   loadout: number[] | null;
   evolutionStage?: number;
   mastery?: Record<number, number>;
+  statOverrides?: StatOverrides | null;
 };
 
 export function rollIvs(rarity: Rarity, rng: Rng): Ivs {
@@ -54,6 +55,7 @@ export function buildCombatant(params: {
   loadout?: number[] | null;
   evolutionStage?: number;
   mastery?: Record<number, number>;
+  overrides?: StatOverrides | null;
 }): CombatantInit {
   const { species, rarity, level, ivs, care } = params;
 
@@ -76,6 +78,8 @@ export function buildCombatant(params: {
     stats.def = Math.floor(stats.def * multiplier);
     stats.mdef = Math.floor(stats.mdef * multiplier);
   }
+
+  const finalStats = applyStatOverrides(stats, params.overrides);
 
   if (species.skills.length < 4) {
     throw new Error(`${species.name} (#${species.id}) has fewer than 4 skills`);
@@ -122,7 +126,7 @@ export function buildCombatant(params: {
     elementLevel: species.elementLevel,
     level,
     rarity,
-    stats,
+    stats: finalStats,
     skills,
     hp: params.hp,
     spawnMap: species.spawnMaps[0],
@@ -147,6 +151,7 @@ export function combatantFromPet(pet: Livestock, species: GeneratedSpecies): Com
     loadout: pet.loadout,
     evolutionStage: pet.evolutionStage ?? 1,
     mastery: pet.mastery,
+    overrides: pet.statOverrides,
   });
 }
 

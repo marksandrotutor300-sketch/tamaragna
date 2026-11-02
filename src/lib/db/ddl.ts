@@ -39,11 +39,13 @@ CREATE TABLE IF NOT EXISTS pets (
   ivs jsonb NOT NULL,
   care jsonb NOT NULL,
   loadout jsonb,
+  stat_overrides jsonb,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE pets ADD COLUMN IF NOT EXISTS nature text NOT NULL DEFAULT 'hardy';
 ALTER TABLE pets ADD COLUMN IF NOT EXISTS star smallint NOT NULL DEFAULT 1;
 ALTER TABLE pets ADD COLUMN IF NOT EXISTS loadout jsonb;
+ALTER TABLE pets ADD COLUMN IF NOT EXISTS stat_overrides jsonb;
 CREATE INDEX IF NOT EXISTS pets_owner_slot_idx ON pets (owner_id, slot);
 
 CREATE TABLE IF NOT EXISTS battles (

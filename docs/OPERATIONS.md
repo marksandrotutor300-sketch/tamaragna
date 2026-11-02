@@ -481,6 +481,9 @@ at the profile.
 - `POST /api/dev/boost` is an admin-token seed helper for local evolution/live/upgrade setup
   (`petId`, `level`, `star`, `coins`, `speciesId`, `eggs`, `materials`, `legacyPoints`).
   Remove `ADMIN_TOKEN` when not needed.
+- `/admin?token=$ADMIN_TOKEN` opens the super-admin console (or use a signed-in account
+  flagged by `npm run admin:promote -- <email>`). It supports player search, wallet edits,
+  pet creation/editing/transfer, stat overrides and the audit log. Keep `ADMIN_TOKEN` private.
 
 ## 17. Live PvP and tournaments
 

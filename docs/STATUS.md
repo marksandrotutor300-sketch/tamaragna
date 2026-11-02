@@ -62,6 +62,7 @@ it is **not** hardened for adversarial scale — see [Known limitations](#known-
 | Habitats + visits | ✅ Done | Four themes, material costs, public ranch visits and visit counts |
 | Ranked circuit + picks | ✅ Done | Ladder, admin cups linked to tournaments, spectator winner picks |
 | Legacy + ghost dojo | ✅ Done | Retirement marks/IV inheritance and team/last-opponent ghost sparring |
+| Super-admin console | ✅ Done | Player search, wallet, pet create/edit/transfer, stat overrides, audit log |
 | Render + Supabase config | ✅ Done | `render.yaml`, pooler-safe DB pool, free deployment guide |
 | Security headers + CSRF | ✅ Done | CSP, nosniff, frame deny, referrer, permissions; Origin check on API mutations |
 | Rate limits | ✅ Done | DB-backed fixed windows on hatch, care, matchmaking, claims and transfers |
@@ -96,7 +97,7 @@ encountered in the tower.
 | --- | --- |
 | `npx tsc --noEmit` | clean |
 | `npm run lint` | clean |
-| `npx vitest run` | 70/70 passing |
+| `npx vitest run` | 75/75 passing |
 | `npm run data:validate` | all checks passing |
 | `npm run build` | compiled successfully; all static pages generated |
 | PWA worker | `/serwist/sw.js` prerendered at build; 53 precache entries (~1.28 MB) |
@@ -121,6 +122,7 @@ The tests cover:
   dimensions; evolution branches resolve; mastery thresholds/power scale; live tickets reject
   tampering.
 - Expedition reward scaling and route lookup, habitat fallback, and legacy IV/trait rules.
+- CSRF origin checks accept Render's forwarded host while still rejecting foreign origins.
 
 ### End-to-end (`npm run smoke`)
 

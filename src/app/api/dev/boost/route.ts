@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { adminGuard } from "@/lib/admin";
+import { superAdminGuard } from "@/lib/admin";
 import { fail, ok, parseBody, withUser } from "@/lib/api";
 import { getDb } from "@/lib/db/client";
 import { pets, profiles } from "@/lib/db/schema";
@@ -24,7 +24,7 @@ const schema = z.object({
  * ADMIN_TOKEN; disable the admin token in production.
  */
 export async function POST(request: Request): Promise<Response> {
-  const guard = adminGuard(request);
+  const guard = await superAdminGuard(request);
   if (guard) return guard;
 
   return withUser(async (profile) => {

@@ -1,11 +1,11 @@
-import { adminGuard } from "@/lib/admin";
+import { superAdminGuard } from "@/lib/admin";
 import { fail, ok } from "@/lib/api";
 import { recomputeBalance } from "@/lib/game/balance";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request): Promise<Response> {
-  const guard = adminGuard(request);
+  const guard = await superAdminGuard(request);
   if (guard) return guard;
   try {
     return ok(await recomputeBalance());

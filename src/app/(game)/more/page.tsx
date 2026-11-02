@@ -4,12 +4,15 @@ import {
   Compass,
   Dna,
   Hammer,
+  Settings,
   Shield,
   ShoppingBag,
   Sparkles,
   Swords,
   Trophy,
 } from "lucide-react";
+import { isSuperAdminUser } from "@/lib/admin";
+import { readSession } from "@/lib/db/session";
 
 const LINKS = [
   {
@@ -63,7 +66,22 @@ const LINKS = [
   },
 ];
 
-export default function MorePage() {
+export default async function MorePage() {
+  const session = await readSession();
+  const isAdmin = await isSuperAdminUser(session?.userId ?? null);
+  const links = isAdmin
+    ? [
+        ...LINKS,
+        {
+          href: "/admin",
+          title: "Admin console",
+          body: "Generate pets, edit stats, gift pets and adjust wallets.",
+          icon: Settings,
+          color: "text-rose",
+        },
+      ]
+    : LINKS;
+
   return (
     <div className="mx-auto max-w-3xl space-y-5">
       <div>
@@ -77,7 +95,7 @@ export default function MorePage() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        {LINKS.map((link) => {
+        {links.map((link) => {
           const Icon = link.icon;
           return (
             <Link key={link.href} href={link.href}>

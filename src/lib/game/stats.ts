@@ -45,6 +45,66 @@ export type CombatStats = {
   luk: number;
 };
 
+/**
+ * Admin-supplied final values. An override is applied after every multiplier
+ * (nature, stars, evolution stage, care), so the stored number is what the
+ * player sees and what battles use.
+ */
+export type StatOverrides = Partial<
+  Pick<
+    CombatStats,
+    | "hpMax"
+    | "atk"
+    | "matk"
+    | "def"
+    | "mdef"
+    | "aspdMs"
+    | "critChance"
+    | "critMult"
+    | "statusResist"
+  >
+>;
+
+export const STAT_OVERRIDE_KEYS = [
+  "hpMax",
+  "atk",
+  "matk",
+  "def",
+  "mdef",
+  "aspdMs",
+  "critChance",
+  "critMult",
+  "statusResist",
+] as const satisfies readonly (keyof StatOverrides)[];
+
+const OVERRIDE_BOUNDS: Record<keyof StatOverrides, [number, number]> = {
+  hpMax: [1, 10_000_000],
+  atk: [0, 10_000_000],
+  matk: [0, 10_000_000],
+  def: [0, 10_000_000],
+  mdef: [0, 10_000_000],
+  aspdMs: [350, 2400],
+  critChance: [0, 1],
+  critMult: [1, 10],
+  statusResist: [0, 1],
+};
+
+export function applyStatOverrides(
+  stats: CombatStats,
+  overrides?: StatOverrides | null,
+): CombatStats {
+  if (!overrides) return stats;
+
+  const next = { ...stats };
+  for (const key of STAT_OVERRIDE_KEYS) {
+    const value = overrides[key];
+    if (typeof value !== "number" || !Number.isFinite(value)) continue;
+    const [min, max] = OVERRIDE_BOUNDS[key];
+    next[key] = clamp(Math.round(value * 1000) / 1000, min, max);
+  }
+  return next;
+}
+
 export function computeStats(params: {
   species: GeneratedSpecies;
   rarity: Rarity;

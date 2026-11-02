@@ -6,7 +6,12 @@ import type { NatureId } from "./nature";
 import { RARITY } from "./rarity";
 import { skillLevelFor, resolveSkill, normalizeLoadout, type ResolvedSkill } from "./skills";
 import { requireSpecies } from "./species";
-import { computeStats, powerScore } from "./stats";
+import {
+  applyStatOverrides,
+  computeStats,
+  powerScore,
+  type StatOverrides,
+} from "./stats";
 import type { ElementId, Rarity } from "./types";
 
 export type PetSpeciesView = {
@@ -39,6 +44,7 @@ export type PetView = {
   marketListed: boolean;
   expeditionId: string | null;
   legacyTrait: string | null;
+  statOverrides: StatOverrides | null;
   stats: ReturnType<typeof computeStats>;
   power: number;
   loadout: number[];
@@ -54,15 +60,18 @@ export function petView(
   const species = requireSpecies(pet.speciesId);
   const rarity = pet.rarity as Rarity;
   const care = normalizeCare(pet.care);
-  const stats = computeStats({
-    species,
-    rarity,
-    level: pet.level,
-    ivs: pet.ivs,
-    care,
-    nature: pet.nature as NatureId,
-    star: pet.star,
-  });
+  const stats = applyStatOverrides(
+    computeStats({
+      species,
+      rarity,
+      level: pet.level,
+      ivs: pet.ivs,
+      care,
+      nature: pet.nature as NatureId,
+      star: pet.star,
+    }),
+    pet.statOverrides,
+  );
 
   const resolvedSkills = species.skills.flatMap((slot) => {
     const definition = getSkill(slot.id);
@@ -117,6 +126,7 @@ export function petView(
     marketListed: pet.marketListed,
     expeditionId: pet.expeditionId,
     legacyTrait: pet.legacyTrait,
+    statOverrides: pet.statOverrides ?? null,
     stats,
     power: powerScore(stats),
     loadout,

@@ -361,6 +361,26 @@ export const MIGRATIONS: Migration[] = [
       );
     `,
   },
+  {
+    version: "0007_super_admin",
+    name: "super-admin role, stat overrides and admin audit log",
+    sql: `
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS is_super_admin boolean NOT NULL DEFAULT false;
+
+      ALTER TABLE pets ADD COLUMN IF NOT EXISTS stat_overrides jsonb;
+
+      CREATE TABLE IF NOT EXISTS admin_audit_log (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        actor_label text NOT NULL,
+        action text NOT NULL,
+        target_profile_id uuid,
+        target_pet_id uuid,
+        detail jsonb NOT NULL DEFAULT '{}'::jsonb,
+        created_at timestamptz NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS admin_audit_log_created_idx ON admin_audit_log (created_at);
+    `,
+  },
 ];
 
 function splitStatements(source: string): string[] {

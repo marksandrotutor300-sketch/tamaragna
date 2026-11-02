@@ -113,6 +113,7 @@ There is no game engine. Battles are rendered with DOM and CSS; sprites are anim
 | `src/lib/game/expeditions.ts` / `habitats.ts` / `legacy.ts` | Routes/rewards, ranch themes and retirement traits |
 | `src/lib/live/rooms.ts` / `ticket.ts` | Authoritative live rooms, SSE fan-out, HMAC tickets |
 | `src/lib/tournaments.ts` | Brackets, joins, match linking and advancement |
+| `src/lib/admin.ts` / `src/lib/admin/service.ts` | Token/super-admin gate, player/pet operations, audit log |
 | `src/lib/db/session.ts` / `src/lib/auth/magic.ts` | Revocable sessions and magic-link tokens |
 | `src/lib/email.ts` / `src/lib/push.ts` | Resend adapter, VAPID push, cron sending |
 | `src/lib/client/care-queue.ts` | IndexedDB care outbox for Background Sync |
@@ -470,6 +471,11 @@ All routes are Node runtime and validate input with Zod. Errors return
 | `GET` | `/api/legacy` / `POST /api/pets/:id/retire` | Retirement marks |
 | `GET/POST` | `/api/dojo/ghosts`, `/api/dojo/ghosts/:id/spar` | Train/list/spar ghosts |
 | `POST` | `/api/dev/boost` | Admin-token seed helper (level/star/species/coins/eggs/materials) |
+| `GET` | `/api/admin/players` / `/api/admin/players/:id` | Super-admin player search/detail |
+| `PATCH` | `/api/admin/players/:id` | Wallet/profile edits |
+| `POST/PATCH` | `/api/admin/pets`, `/api/admin/pets/:id` | Create/edit pets and overrides |
+| `POST` | `/api/admin/pets/:id/transfer` | Transfer pet ownership |
+| `GET` | `/api/admin/audit` | Recent audit entries |
 | `POST` | `/api/pets/:id/care` | `feed` / `play` / `rest` / `wake` / `train` |
 | `POST` | `/api/hatch` | `{ kind: "wild" \| "focused", focusElement? }` |
 | `POST` | `/api/breed` | `{ parentA, parentB }` → inherited child |
@@ -857,8 +863,8 @@ trade-off is that a tab holding old chunks can need one reload.
 
 ### 16.8 Verification
 
-- Vitest: 70 tests across the engine, genetics, sharing, telemetry, evolution, mastery, live
-  tickets, expeditions, habitats and legacy.
+- Vitest: 75 tests across the engine, genetics, sharing, telemetry, evolution, mastery, live
+  tickets, expeditions, habitats, legacy and the CSRF origin guard.
 - Playwright: 7 flows, including all seven new hub pages.
 - Fresh-database HTTP verification exercised every new flow: guild/raid, market sale, habitat
   purchase + visit, legacy retirement, dojo spar, expedition start, ranked cup with eight

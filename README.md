@@ -99,6 +99,8 @@ The service worker is intentionally disabled in `next dev`; test installability 
   delayed spectators, and single-elimination tournaments.
 - **Telemetry.** Battle outcome events, daily balance aggregates, outlier reporting and an
   admin dashboard.
+- **Admin console.** Super-admin account or `ADMIN_TOKEN` access for player search, wallet
+  edits, pet creation/editing/transfer, stat overrides and an audit log.
 - **Deployable free.** `render.yaml` and `docs/DEPLOY-RENDER-SUPABASE.md` run the app on
   Render Free with Supabase Free Postgres. The repo is deployed from
   `main`; Render's `autoDeployTrigger: commit` rebuilds and migrates on every push.
@@ -129,7 +131,7 @@ Postgres or embedded PGlite · TanStack Query · Serwist (PWA) · Vitest.
 | --- | --- |
 | `npm run dev` | Dev server (generates game data first if missing) |
 | `npm run build` / `npm start` | Production build and server |
-| `npm test` | 70 unit tests: engine, genetics, sharing, telemetry, evolution, mastery, live tickets, expeditions, habitats, legacy |
+| `npm test` | 75 unit tests: engine, genetics, sharing, telemetry, evolution, mastery, live tickets, expeditions, habitats, legacy, CSRF origin |
 | `npm run balance` | Headless battle pacing sweep |
 | `npm run smoke` | End-to-end API + server replay check (server must be running) |
 | `npm run smoke:pvp` | Two-account matchmaking, replay and Elo check |

@@ -158,6 +158,7 @@ describe("skill loadouts", () => {
       nature: "hardy",
       star: 1,
       loadout: ids,
+      statOverrides: null,
     };
     const [combatant] = teamToCombatants([pet]);
     expect(combatant.skills.map((skill) => skill.id)).toEqual(ids);
@@ -283,6 +284,7 @@ describe("team synergies", () => {
       nature: "hardy",
       star: 1,
       loadout: null,
+      statOverrides: null,
     };
     const solo = teamToCombatants([base]);
     const trio = teamToCombatants([

@@ -28,6 +28,7 @@
     "db:unlock": "tsx scripts/unlock-db.ts",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:status": "tsx scripts/migrate.ts",
+    "admin:promote": "tsx scripts/promote-admin.ts",
     "e2e": "playwright test",
     "load": "tsx scripts/load-test.ts",
     "smoke": "tsx scripts/e2e-check.ts",
