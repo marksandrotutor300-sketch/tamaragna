@@ -453,11 +453,21 @@ export function AdminConsole({
       <div className="text-[10px] uppercase tracking-[0.2em] text-muted">
         super admin
       </div>
-      <h1 className="font-display text-3xl">Admin console</h1>
-      <p className="mt-1 text-xs text-muted">
-        Signed in as {actor} ({via}). Generate pets, edit stats, gift pets and adjust
-        wallets. Every action is written to the audit log.
-      </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-display text-3xl">Admin console</h1>
+          <p className="mt-1 text-xs text-muted">
+            Signed in as {actor} ({via}, {role}). Generate pets, edit stats, gift pets and
+            adjust wallets. Every action is written to the audit log.
+          </p>
+        </div>
+        <a
+          href={`/admin/balance${token ? `?token=${encodeURIComponent(token)}` : ""}`}
+          className="rounded-lg border border-line px-3 py-2 text-[11px] text-muted transition hover:border-teal/40 hover:text-teal"
+        >
+          Balance telemetry
+        </a>
+      </div>
 
       {via === "token" ? (
         <div className="mt-3 flex flex-wrap items-center gap-2">

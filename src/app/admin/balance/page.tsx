@@ -1,7 +1,9 @@
 import { desc } from "drizzle-orm";
 import { notFound } from "next/navigation";
+import { getAdminRoleForUser } from "@/lib/admin";
 import { getDb } from "@/lib/db/client";
 import { balanceDaily } from "@/lib/db/schema";
+import { readSession } from "@/lib/db/session";
 
 export const dynamic = "force-dynamic";
 
@@ -12,9 +14,16 @@ export default async function BalancePage({
 }: {
   searchParams: Promise<{ token?: string }>;
 }) {
-  const token = process.env.ADMIN_TOKEN;
+  const envToken = process.env.ADMIN_TOKEN;
   const { token: provided } = await searchParams;
-  if (!token || provided !== token) notFound();
+  let allowed = Boolean(envToken && provided === envToken);
+  if (!allowed) {
+    const session = await readSession();
+    allowed = Boolean(
+      session && (await getAdminRoleForUser(session.userId, session.email)),
+    );
+  }
+  if (!allowed) notFound();
 
   const db = await getDb();
   const rows = await db
