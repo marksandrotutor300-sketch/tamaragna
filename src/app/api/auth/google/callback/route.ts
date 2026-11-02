@@ -10,12 +10,12 @@ import {
 } from "@/lib/auth/google";
 import { checkRateLimit, clientKey, LIMITS } from "@/lib/rate-limit";
 import { createSession, hashToken } from "@/lib/db/session";
-import { siteUrl } from "@/lib/site";
+import { siteUrl, redirectUrl } from "@/lib/site";
 
 export const runtime = "nodejs";
 
 function back(request: NextRequest, error: string): Response {
-  return NextResponse.redirect(new URL(`/signin?error=${error}`, request.url));
+  return NextResponse.redirect(redirectUrl(request, `/signin?error=${error}`));
 }
 
 export async function GET(request: NextRequest): Promise<Response> {
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest): Promise<Response> {
       ipHash: hashToken(ip),
     });
 
-    return NextResponse.redirect(new URL("/account?welcome=1", request.url));
+    return NextResponse.redirect(redirectUrl(request, "/account?welcome=1"));
   } catch (error) {
     console.error("[auth] google sign-in failed", error);
     return back(request, "google-failed");

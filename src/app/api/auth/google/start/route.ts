@@ -8,13 +8,13 @@ import {
   OAUTH_STATE_COOKIE,
   OAUTH_STATE_MAX_AGE,
 } from "@/lib/auth/google";
-import { siteUrl } from "@/lib/site";
+import { siteUrl, redirectUrl } from "@/lib/site";
 
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest): Promise<Response> {
   if (!googleConfigured()) {
-    return NextResponse.redirect(new URL("/signin?error=google-unavailable", request.url));
+    return NextResponse.redirect(redirectUrl(request, "/signin?error=google-unavailable"));
   }
 
   const state = randomBytes(24).toString("base64url");
