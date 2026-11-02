@@ -15,6 +15,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { Button, EmptyState, Panel, Pill, SectionTitle } from "@/components/ui/primitives";
+import { useMe } from "@/hooks/useGame";
 import type { AdminRole } from "@/lib/db/schema";
 
 type Player = {
@@ -137,6 +138,7 @@ export function AdminConsole({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const { data: me } = useMe();
 
   const [query, setQuery] = useState("");
   const [players, setPlayers] = useState<Player[]>([]);
@@ -308,6 +310,9 @@ export function AdminConsole({
     run(async () => {
       const body = await request<{ player: PlayerDetail }>(`/api/admin/players/${id}`);
       setDetail(body.player);
+      setGiftPetId("");
+      setGiftTarget(null);
+      setGiftPlayers([]);
       setWallet({
         displayName: body.player.displayName,
         coins: String(body.player.coins),
@@ -444,6 +449,8 @@ export function AdminConsole({
       );
       setNotice(`Gifted ${body.pet.nickname} to ${giftTarget.displayName}`);
       setGiftPetId("");
+      setGiftTarget(null);
+      setGiftPlayers([]);
       await refreshAudit();
       if (detail) await openPlayer(detail.id);
     });
@@ -461,12 +468,24 @@ export function AdminConsole({
             adjust wallets. Every action is written to the audit log.
           </p>
         </div>
-        <a
-          href={`/admin/balance${token ? `?token=${encodeURIComponent(token)}` : ""}`}
-          className="rounded-lg border border-line px-3 py-2 text-[11px] text-muted transition hover:border-teal/40 hover:text-teal"
-        >
-          Balance telemetry
-        </a>
+        <div className="flex flex-wrap gap-2">
+          {via === "session" && me?.profile.id ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => void openPlayer(me.profile.id)}
+              disabled={busy}
+            >
+              My profile
+            </Button>
+          ) : null}
+          <a
+            href={`/admin/balance${token ? `?token=${encodeURIComponent(token)}` : ""}`}
+            className="rounded-lg border border-line px-3 py-2 text-[11px] text-muted transition hover:border-teal/40 hover:text-teal"
+          >
+            Balance telemetry
+          </a>
+        </div>
       </div>
 
       {via === "token" ? (
@@ -998,16 +1017,28 @@ export function AdminConsole({
         ) : null}
 
         <Panel>
-          <SectionTitle hint="pet id + destination ranch">Gift pet</SectionTitle>
+          <SectionTitle hint="selected player's pet + destination ranch">Gift pet</SectionTitle>
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
             <label className="grid gap-1">
-              <span className={labelClass}>Pet id</span>
-              <input
-                value={giftPetId}
-                onChange={(event) => setGiftPetId(event.target.value)}
-                placeholder="uuid"
-                className={inputClass}
-              />
+              <span className={labelClass}>Pet</span>
+              {detail?.pets.length ? (
+                <select
+                  value={giftPetId}
+                  onChange={(event) => setGiftPetId(event.target.value)}
+                  className={inputClass}
+                >
+                  <option value="">Choose a pet</option>
+                  {detail.pets.map((pet) => (
+                    <option key={pet.id} value={pet.id}>
+                      {pet.nickname} · {pet.species.name} · Lv {pet.level}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="rounded-lg border border-dashed border-line/60 px-2 py-2 text-[10px] text-muted">
+                  Select a player above first.
+                </div>
+              )}
             </label>
             <label className="grid gap-1">
               <span className={labelClass}>Target player</span>
@@ -1042,7 +1073,11 @@ export function AdminConsole({
             </div>
           ) : null}
           <div className="mt-3 flex items-center gap-3">
-            <Button size="sm" onClick={() => void giftPet()} disabled={busy || !giftTarget}>
+            <Button
+              size="sm"
+              onClick={() => void giftPet()}
+              disabled={busy || !giftTarget || !giftPetId}
+            >
               <Gift className="h-3.5 w-3.5" /> Gift
             </Button>
             <span className="text-[10px] text-muted">
