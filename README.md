@@ -10,6 +10,10 @@ teams asynchronously.
 **Non-commercial fan project.** No game art is authored or redistributed — see
 [NOTICE.md](NOTICE.md).
 
+Source: <https://github.com/marksandrotutor300-sketch/tamaragna>
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/marksandrotutor300-sketch/tamaragna)
+
 ---
 
 ## Run it
@@ -96,7 +100,8 @@ The service worker is intentionally disabled in `next dev`; test installability 
 - **Telemetry.** Battle outcome events, daily balance aggregates, outlier reporting and an
   admin dashboard.
 - **Deployable free.** `render.yaml` and `docs/DEPLOY-RENDER-SUPABASE.md` run the app on
-  Render Free with Supabase Free Postgres.
+  Render Free with Supabase Free Postgres. The repo is deployed from
+  `main`; Render's `autoDeployTrigger: commit` rebuilds and migrates on every push.
 
 ## Documentation
 

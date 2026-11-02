@@ -21,11 +21,30 @@ Recent platform checks (November 2026):
 
 ## 0. Prerequisites
 
-- The repo is pushed to GitHub.
+- Repository: <https://github.com/marksandrotutor300-sketch/tamaragna> (public, `main`).
 - A Render account and a Supabase account.
 - `render.yaml` is at the repository root.
-- `npm run build`, `npm test`, and `npm run e2e` pass locally.
-- `npx tsc --noEmit` is clean.
+- `npm run typecheck`, `npm test`, and `npm run build` pass locally (typecheck and the 70
+  unit tests passed on the first pushed commit).
+
+### First push (done once)
+
+`gh` is not required; Git Credential Manager supplies the GitHub login.
+
+```bash
+git remote add origin https://github.com/marksandrotutor300-sketch/tamaragna.git
+git push -u origin main
+```
+
+If the repository does not exist yet, create it empty at <https://github.com/new>
+(name `tamaragna`, no README), or with the GitHub CLI:
+
+```bash
+gh repo create tamaragna --public --source . --remote origin --push
+```
+
+After the first push, `autoDeployTrigger: commit` redeploys on every later push to `main`.
+No extra CI is needed for this deployment.
 
 ## 1. Create the Supabase database
 
@@ -55,8 +74,11 @@ schema through the pooler.
 
 ## 2. Create the Render Blueprint
 
-1. Push the repository, including `render.yaml`, to GitHub.
-2. In the Render Dashboard, click **New → Blueprint**.
+1. Push the repository, including `render.yaml`, to GitHub. It is already at
+   <https://github.com/marksandrotutor300-sketch/tamaragna>.
+2. Fastest path: open the README's **Deploy to Render** button
+   (`https://render.com/deploy?repo=https://github.com/marksandrotutor300-sketch/tamaragna`),
+   or in the Render Dashboard click **New → Blueprint**.
 3. Connect GitHub and select the repository.
 4. Choose the branch containing `render.yaml` (usually `main`).
 5. Render reads `render.yaml` and prompts for the `sync: false` variables:

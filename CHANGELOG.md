@@ -60,6 +60,9 @@ pre-1.0 and the format follows [Keep a Changelog](https://keepachangelog.com/).
   team or the last opponent.
 - Render Free + Supabase Free deployment: `render.yaml`, a `POSTGRES_MAX` pool cap,
   pooler-safe prepared statements and a step-by-step deployment guide.
+- Public repository at <https://github.com/marksandrotutor300-sketch/tamaragna> with a
+  **Deploy to Render** button. `main` is the deploy branch; Render's
+  `autoDeployTrigger: commit` rebuilds and migrates on every push.
 - `/more` hub, seven feature screens, and Playwright coverage for the new hub pages.
 
 ### Changed
