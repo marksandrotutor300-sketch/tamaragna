@@ -15,6 +15,16 @@ import {
 import type { CareState, Ivs } from "@/lib/game/types";
 import type { QuestState } from "@/lib/game/quests";
 import type { StatOverrides } from "@/lib/game/stats";
+import type {
+  CardAction,
+  CardBattleResult,
+  CardBattleState,
+  CardChampion,
+  CardDeck,
+  CardMap,
+  CardRunStatus,
+  PendingNode,
+} from "@/lib/cards/types";
 import type { BattleInput, BattleResult, CombatantInit } from "@/lib/sim/types";
 
 export const users = pgTable("users", {
@@ -165,6 +175,78 @@ export const towerRuns = pgTable(
   ],
 );
 
+export const cardRuns = pgTable(
+  "card_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerId: uuid("owner_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    seed: text("seed").notNull(),
+    status: text("status").$type<CardRunStatus>().notNull().default("active"),
+    act: smallint("act").notNull().default(1),
+    nodeId: text("node_id"),
+    map: jsonb("map").$type<CardMap>().notNull(),
+    deck: jsonb("deck").$type<CardDeck>().notNull(),
+    relics: jsonb("relics").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    champions: jsonb("champions").$type<CardChampion[]>().notNull(),
+    runGold: integer("run_gold").notNull().default(0),
+    pending: jsonb("pending").$type<PendingNode | null>(),
+    score: integer("score").notNull().default(0),
+    elapsedMs: integer("elapsed_ms").notNull().default(0),
+    season: smallint("season").notNull().default(1),
+    completedNodeIds: jsonb("completed_node_ids")
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    rewardCoins: integer("reward_coins").notNull().default(0),
+    rewardMaterials: integer("reward_materials").notNull().default(0),
+    rewardEggs: integer("reward_eggs").notNull().default(0),
+    rewardXp: integer("reward_xp").notNull().default(0),
+    rewardedAt: timestamp("rewarded_at", { withTimezone: true }),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("card_runs_owner_status_idx").on(table.ownerId, table.status),
+    index("card_runs_leaderboard_idx").on(
+      table.status,
+      table.score,
+      table.elapsedMs,
+    ),
+    uniqueIndex("card_runs_active_idx")
+      .on(table.ownerId)
+      .where(sql`status = 'active'`),
+  ],
+);
+
+export const cardBattles = pgTable(
+  "card_battles",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerId: uuid("owner_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    runId: uuid("run_id")
+      .notNull()
+      .references(() => cardRuns.id, { onDelete: "cascade" }),
+    nodeId: text("node_id").notNull(),
+    seed: text("seed").notNull(),
+    state: jsonb("state").$type<CardBattleState>().notNull(),
+    inputLog: jsonb("input_log").$type<CardAction[]>().notNull().default(sql`'[]'::jsonb`),
+    result: jsonb("result").$type<CardBattleResult | null>(),
+    resultHash: text("result_hash"),
+    version: integer("version").notNull().default(0),
+    status: text("status").notNull().default("pending"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("card_battles_run_status_idx").on(table.runId, table.status),
+    index("card_battles_owner_idx").on(table.ownerId, table.createdAt),
+  ],
+);
+
 export const pvpSnapshots = pgTable(
   "pvp_snapshots",
   {
@@ -217,6 +299,8 @@ export type SeasonMeta = typeof seasons.$inferSelect;
 export type Pet = typeof pets.$inferSelect;
 export type Battle = typeof battles.$inferSelect;
 export type TowerRun = typeof towerRuns.$inferSelect;
+export type CardRun = typeof cardRuns.$inferSelect;
+export type CardBattleRow = typeof cardBattles.$inferSelect;
 export type PvpSnapshot = typeof pvpSnapshots.$inferSelect;
 export type QuestStateRow = typeof questStates.$inferSelect;
 export type SeasonReward = typeof seasonRewards.$inferSelect;

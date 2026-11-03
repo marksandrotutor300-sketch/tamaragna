@@ -418,6 +418,60 @@ export const MIGRATIONS: Migration[] = [
         ON admin_role_events (actor_user_id, created_at);
     `,
   },
+  {
+    version: "0009_card_crusade",
+    name: "rift deck runs, card battles and reward ledger",
+    sql: `
+      CREATE TABLE IF NOT EXISTS card_runs (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        owner_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+        seed text NOT NULL,
+        status text NOT NULL DEFAULT 'active',
+        act smallint NOT NULL DEFAULT 1,
+        node_id text,
+        map jsonb NOT NULL,
+        deck jsonb NOT NULL,
+        relics jsonb NOT NULL DEFAULT '[]'::jsonb,
+        champions jsonb NOT NULL,
+        run_gold integer NOT NULL DEFAULT 0,
+        pending jsonb,
+        score integer NOT NULL DEFAULT 0,
+        elapsed_ms integer NOT NULL DEFAULT 0,
+        season smallint NOT NULL DEFAULT 1,
+        completed_node_ids jsonb NOT NULL DEFAULT '[]'::jsonb,
+        reward_coins integer NOT NULL DEFAULT 0,
+        reward_materials integer NOT NULL DEFAULT 0,
+        reward_eggs integer NOT NULL DEFAULT 0,
+        reward_xp integer NOT NULL DEFAULT 0,
+        rewarded_at timestamptz,
+        started_at timestamptz NOT NULL DEFAULT now(),
+        ended_at timestamptz
+      );
+      CREATE INDEX IF NOT EXISTS card_runs_owner_status_idx ON card_runs (owner_id, status);
+      CREATE INDEX IF NOT EXISTS card_runs_leaderboard_idx
+        ON card_runs (status, score DESC, elapsed_ms);
+      CREATE UNIQUE INDEX IF NOT EXISTS card_runs_active_idx
+        ON card_runs (owner_id) WHERE status = 'active';
+
+      CREATE TABLE IF NOT EXISTS card_battles (
+        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+        owner_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+        run_id uuid NOT NULL REFERENCES card_runs(id) ON DELETE CASCADE,
+        node_id text NOT NULL,
+        seed text NOT NULL,
+        state jsonb NOT NULL,
+        input_log jsonb NOT NULL DEFAULT '[]'::jsonb,
+        result jsonb,
+        result_hash text,
+        version integer NOT NULL DEFAULT 0,
+        status text NOT NULL DEFAULT 'pending',
+        created_at timestamptz NOT NULL DEFAULT now(),
+        completed_at timestamptz
+      );
+      CREATE INDEX IF NOT EXISTS card_battles_run_status_idx ON card_battles (run_id, status);
+      CREATE INDEX IF NOT EXISTS card_battles_owner_idx ON card_battles (owner_id, created_at);
+    `,
+  },
 ];
 
 function splitStatements(source: string): string[] {

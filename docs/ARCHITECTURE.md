@@ -269,6 +269,44 @@ Index: `battles(owner_id, created_at)`.
 
 Index: `tower_runs(owner_id, status)`.
 
+### `card_runs`
+
+A three-act Rift Deck run. One active row per profile via the partial unique index
+`card_runs_active_idx`.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | uuid PK | |
+| `owner_id` | uuid FK | cascade |
+| `seed` | text | never exposed through the API |
+| `status` | text | `active` / `won` / `lost` / `abandoned` |
+| `act`, `node_id` | smallint/text | current act and last reached node |
+| `map` | jsonb | generated three-act map |
+| `deck` | jsonb | card instances + next instance id |
+| `relics` | jsonb | string ids |
+| `champions` | jsonb | pet snapshots with run HP/block/cards |
+| `run_gold` | integer | run-local currency |
+| `pending` | jsonb | reward/rest/shop/event interaction |
+| `score`, `elapsed_ms`, `season` | numeric | leaderboard and season |
+| `completed_node_ids` | jsonb | cleared rooms |
+| `reward_*`, `rewarded_at` | integer/timestamptz | once-only capped reward ledger |
+| `started_at`, `ended_at` | timestamptz | |
+
+### `card_battles`
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | uuid PK | |
+| `owner_id`, `run_id` | uuid FK | cascade |
+| `node_id` | text | map node |
+| `seed` | text | battle seed |
+| `state` | jsonb | server-authoritative combat state |
+| `input_log` | jsonb | accepted card actions |
+| `result`, `result_hash` | jsonb/text | terminal combat result |
+| `version` | integer | optimistic action concurrency |
+| `status` | text | `pending` / `complete` / `lost` |
+| `created_at`, `completed_at` | timestamptz | |
+
 ### `pvp_snapshots`
 
 | Column | Type | Notes |
@@ -474,6 +512,18 @@ All routes are Node runtime and validate input with Zod. Errors return
 | `GET` | `/api/legacy` / `POST /api/pets/:id/retire` | Retirement marks |
 | `GET/POST` | `/api/dojo/ghosts`, `/api/dojo/ghosts/:id/spar` | Train/list/spar ghosts |
 | `POST` | `/api/dev/boost` | Admin-token seed helper (level/star/species/coins/eggs/materials) |
+| `GET` | `/api/cards` | Rift Deck hub, active run and leaderboard |
+| `POST` | `/api/cards/runs` | Start/resume a three-act run |
+| `GET` | `/api/cards/runs/:id` | Run map, deck, relics, champions and pending node |
+| `POST` | `/api/cards/runs/:id/enter` | Enter a reachable node |
+| `POST` | `/api/cards/runs/:id/reward` | Claim a card/relic/skip reward |
+| `POST` | `/api/cards/runs/:id/rest` | Heal or upgrade a card |
+| `POST` | `/api/cards/runs/:id/shop` | Buy, remove or leave |
+| `POST` | `/api/cards/runs/:id/event` | Resolve an event choice |
+| `POST` | `/api/cards/runs/:id/abandon` | End the run without main rewards |
+| `GET` | `/api/cards/leaderboard` | Won-run leaderboard |
+| `GET` | `/api/cards/battles/:id` | Current server battle state |
+| `POST` | `/api/cards/battles/:id/action` | Play a card or end turn (versioned) |
 | `GET` | `/api/admin/players` / `/api/admin/players/:id` | Super-admin player search/detail |
 | `PATCH` | `/api/admin/players/:id` | Wallet/profile edits |
 | `POST/PATCH` | `/api/admin/pets`, `/api/admin/pets/:id` | Create/edit pets and overrides |
@@ -876,7 +926,7 @@ trade-off is that a tab holding old chunks can need one reload.
 
 ### 16.8 Verification
 
-- Vitest: 82 tests across the engine, genetics, sharing, telemetry, evolution, mastery, live
+- Vitest: 98 tests across the engine, genetics, sharing, telemetry, evolution, mastery, live
   tickets, expeditions, habitats, legacy, stat overrides and the CSRF origin guard.
 - Playwright: 7 flows, including all seven new hub pages.
 - Fresh-database HTTP verification exercised every new flow: guild/raid, market sale, habitat
@@ -897,7 +947,10 @@ trade-off is that a tab holding old chunks can need one reload.
   role, reason, timestamp). Owners see all events; an admin sees events involving their own
   account. Normal admin mutations still write `admin_audit_log`.
 - `/api/admin/*` exposes player search, wallet edits, pet generation, pet stat edits and pet
-  gifting. Every mutation writes an audit row.
+  gifting. Every mutation writes an audit row. `/admin/balance` accepts an owner/admin session
+  or the token; ranked cup/tournament creation and aggregate rebuilding use `superAdminGuard`.
+- Economy/pet admin edits are direct, unlimited within the API bounds, audited but not
+  reversible; role changes are the only reversible admin action.
 - Stats stay derived. `pets.stat_overrides` holds admin-forced final values (`hpMax, atk,
   matk, def, mdef, aspdMs, critChance, critMult, statusResist`) that `applyStatOverrides()`
   applies after nature, stars, care and evolution stage in both `petView()` and

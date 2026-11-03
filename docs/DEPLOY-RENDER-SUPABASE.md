@@ -121,7 +121,7 @@ The build should run in this order:
 Expected signs of success:
 
 - Build log ends with a successful Next.js build.
-- Migration log applies `0008_admin_roles`.
+- Migration log applies `0009_card_crusade`.
 - The service starts on Render’s assigned `PORT`.
 - `/api/health` returns `200` with:
 
@@ -129,7 +129,7 @@ Expected signs of success:
 {
   "status": "ok",
   "db": "ok",
-  "schemaVersion": "0008_admin_roles"
+  "schemaVersion": "0009_card_crusade"
 }
 ```
 

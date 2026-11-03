@@ -7,6 +7,13 @@ pre-1.0 and the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Rift Deck: three-act roguelike card side game. Three team pets become champions, each
+  contributes its four equipped skills, and runs add cards, relics, shops, rests and events.
+  Server-authoritative turn actions, resumable `card_runs`/`card_battles`, capped rewards,
+  card quests, leaderboard, codex, `/cards` hub and full-screen card battle UI.
+- Rift Deck uses all 64 curated skills as cards plus 16 original neutral cards, 18 relics,
+  12 normal/6 elite encounter kits and 3 bosses; no new art assets.
+- Migration `0009_card_crusade`; `FEATURE_CARDS`; Team/Ranch entry points and `More` link.
 - Installable PWA built with Serwist + `@serwist/turbopack`: web app manifest, 192/512/
   maskable icons, Apple touch icon, precached app shell and an offline fallback page.
 - Service-worker caching policy: RO sprites, skill icons and maps are cache-first; all
@@ -68,6 +75,7 @@ pre-1.0 and the format follows [Keep a Changelog](https://keepachangelog.com/).
   `admin_audit_log`.
 - Owner/admin role hierarchy: `OWNER_EMAIL` bootstrap, owner-only grant/revoke/rollback and
   owner transfer, plus `admin_role_events` logs visible to both the owner and affected admin.
+- Admin/owner sessions can open `/admin/balance` and link directly from the admin console.
 - `pets.stat_overrides` raw stat overrides applied after nature/stars/care/evolution in both
   the roster view and battle combatants.
 - Google sign-in (`/api/auth/google/start` + `/api/auth/google/callback`) alongside magic

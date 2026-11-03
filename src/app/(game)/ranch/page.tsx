@@ -12,6 +12,7 @@ import {
   Heart,
   Zap,
   ChevronRight,
+  Layers,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Bar, Button, Panel, SectionTitle, Spinner } from "@/components/ui/primitives";
@@ -127,6 +128,13 @@ export default function RanchPage() {
           <h1 className="font-display text-2xl">Good to see you</h1>
         </div>
         <div className="flex gap-2">
+          {team.length === 3 ? (
+            <Link href="/cards">
+              <Button variant="ghost" size="sm">
+                <Layers className="h-4 w-4" /> Rift Deck
+              </Button>
+            </Link>
+          ) : null}
           {team.map((entry) => (
             <button
               key={entry.id}

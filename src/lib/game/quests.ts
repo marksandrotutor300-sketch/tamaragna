@@ -1,4 +1,11 @@
-export type QuestEvent = "care" | "hatch" | "battle_win" | "tower_wave";
+export type QuestEvent =
+  | "care"
+  | "hatch"
+  | "battle_win"
+  | "tower_wave"
+  | "card_win"
+  | "card_room"
+  | "card_run";
 export type QuestKind = "daily" | "weekly";
 
 export type QuestDef = {
@@ -53,6 +60,16 @@ export const DAILY_QUESTS: QuestDef[] = [
     coins: 50,
     eggs: 0,
   },
+  {
+    id: "card-win-1",
+    name: "Rift skirmish",
+    description: "Win 1 Rift Deck battle.",
+    event: "card_win",
+    target: 1,
+    kind: "daily",
+    coins: 80,
+    eggs: 0,
+  },
 ];
 
 export const WEEKLY_QUESTS: QuestDef[] = [
@@ -84,6 +101,26 @@ export const WEEKLY_QUESTS: QuestDef[] = [
     target: 5,
     kind: "weekly",
     coins: 300,
+    eggs: 1,
+  },
+  {
+    id: "card-room-10",
+    name: "Rift delver",
+    description: "Clear 10 Rift Deck rooms.",
+    event: "card_room",
+    target: 10,
+    kind: "weekly",
+    coins: 350,
+    eggs: 0,
+  },
+  {
+    id: "card-run-1",
+    name: "Rift conqueror",
+    description: "Complete 1 three-act Rift Deck run.",
+    event: "card_run",
+    target: 1,
+    kind: "weekly",
+    coins: 500,
     eggs: 1,
   },
 ];

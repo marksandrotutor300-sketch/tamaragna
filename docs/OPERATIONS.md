@@ -114,14 +114,21 @@ The DDL also adds `pets.nature`, `pets.star`, `pets.loadout`, `pets.evolution_st
 `analytics_events`, `balance_daily`, `pet_skill_mastery`, `live_matches`, `matchmaking_queue`,
 `tournaments`, `tournament_entries`, `tournament_matches`, `guilds`, `guild_members`,
 `guild_raids`, `guild_contributions`, `market_listings`, `expeditions`, `ranch_visits`,
-`ranked_cups`, `spectator_picks`, `legacy_marks`, `dojo_ghosts`, `dojo_runs`,
-`admin_audit_log` and `admin_role_events`. Migration `0008_admin_roles` adds
-`users.admin_role` and the role-event table; the oldest legacy super admin becomes owner.
+`ranked_cups`, `spectator_picks`, `legacy_marks`, `dojo_ghosts`, `dojo_runs`, `card_runs`,
+`card_battles`, `admin_audit_log` and `admin_role_events`. Migration `0009_card_crusade` adds
+the Rift Deck run/battle tables, one active-run index and the once-only reward ledger.
 Existing pets default to Hardy, 1★, stage 1 and the first three attacks plus one support; no manual
 migration is needed. New profiles join the highest season in use. `ensure-data` detects stale
 four-skill data and generates the evolution graph when missing.
 
-The current schema version is **`0008_admin_roles`**.
+The current schema version is **`0009_card_crusade`**.
+
+### Rift Deck controls
+
+`FEATURE_CARDS=0` disables the card API (404). Card runs require three team pets; one active
+run per profile. Card battle actions are versioned server transactions, not client-trusted
+state. Main-economy rewards are once-only per run with a UTC daily cap; abandoned runs pay
+nothing. See [RIFT-DECK.md](RIFT-DECK.md).
 
 ### Versioned migrations
 
@@ -616,6 +623,26 @@ team slot, market listing and expedition state.
 
 Role-management routes are owner-only; admin attempts return the same masked 404 as other admin
 routes. With `ADMIN_TOKEN` unset and no owner account, `/admin` is unreachable.
+
+Admin/owner sessions can also open `/admin/balance`; token access still works via
+`/admin/balance?token=$ADMIN_TOKEN`. `/api/dev/boost` is a separate privileged seed helper
+restricted to admin/owner identities, not a normal console action.
+
+### What admins can do to economy and pets
+
+- Set any player's coins (0–1B), eggs (0–1,000), food, materials, legacy points and spectator
+  points.
+- Create custom or random pets for any player, up to the 30-pet ranch cap.
+- Edit nickname, level, EXP, rarity, nature, stars, evolution stage, IVs, loadout and raw stat
+  overrides.
+- Gift any pet to another player; active listings are cancelled and team/market/expedition state
+  is cleared.
+- View balance telemetry and rebuild aggregates.
+- Create ranked cups and tournaments.
+
+These actions are logged in `admin_audit_log`. They are **not reversible** and have no
+before/after snapshot; only owner/admin role changes have rollback. There is no pet/account
+delete, ban, rating/season editor or species-change-on-existing-pet action.
 
 Raw overrides are final values: `hpMax`, `atk`, `matk`, `def`, `mdef`, `aspdMs`, `critChance`,
 `critMult` and `statusResist` replace the computed numbers after nature, stars, care and

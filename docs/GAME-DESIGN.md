@@ -553,3 +553,28 @@ unaffected. The hatch screen lists them.
 Every fifth wave is elite (one affix); every tenth is an MVP with two. After a cleared wave
 with no pending battle, the player picks one of three run-scoped blessings before the next
 wave. Both systems are detailed in [section 8](#8-endless-tower).
+
+## 18. Rift Deck
+
+A turn-based card roguelike side mode, separate from the ATB battle engine.
+
+- **Squad and deck.** Exactly three team pets become champions. Each contributes its four
+  equipped skills; the starter deck is 12 cards. Editing a pet mid-run does not change the run
+  snapshot. A champion's cards exhaust when that champion falls.
+- **Combat.** Three champions versus one to three enemies. Start with 3 energy and 5 cards;
+  draw 5 at the start of each turn. Cards cost 0–3; block is per champion and clears at turn
+  start. Enemy intents are visible.
+- **Cards.** All 64 curated skills become skill cards, plus 16 original neutral cards. Damage
+  uses champion ATK/MATK, element multipliers, defense mitigation, block, weak/vulnerable and
+  card statuses. Card upgrades reduce cost and raise effect values.
+- **Run.** Three acts, 10–12 floors each, branching 1–3 node floors. Battle, elite, event,
+  rest, shop, treasure and boss nodes. Clearing the third boss wins.
+- **Rewards.** Act-filtered card drafts, relics, run gold, rest upgrades/removal, shops and six
+  events. Run gold is separate from main coins.
+- **Persistence.** `card_runs` stores the full run; `card_battles` stores the current
+  server-authoritative state and action version. One active run per profile. Reloading resumes
+  the exact state.
+- **Main rewards.** Win 450 coins / 8 materials / 1 egg / 120 EXP per squad pet; loss 120 / 3 /
+  40 EXP; abandon pays nothing. UTC daily cap 1,350 coins / 24 materials / 1 egg.
+- **Content limits.** PvE only at launch; no persistent card collection; existing sprites and
+  skill icons only. Full rules and API are in [RIFT-DECK.md](RIFT-DECK.md).

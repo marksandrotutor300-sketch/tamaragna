@@ -69,6 +69,10 @@ The service worker is intentionally disabled in `next dev`; test installability 
 - **Endless Tower.** Waves scale from your team's level, every 10th wave is an MVP, elite
   waves carry affixes, each cleared wave offers a run-scoped blessing, and there is a global
   leaderboard.
+- **Rift Deck.** A three-act roguelike card side game: three team pets become champions, their
+  equipped skills form a 12-card deck, and branching runs add cards, relics, shops, rests and
+  events across Verdant, Ember and Astral acts. Server-authoritative turn actions, resumable
+  runs, capped rewards and card quests.
 - **Async PvP.** Fight snapshots of other players' teams with placements, seasonal tiers,
   rewards and rating history.
 - **Tamagotchi care.** Hunger, mood, energy and friendship decay in real time (capped at
@@ -131,7 +135,7 @@ Postgres or embedded PGlite · TanStack Query · Serwist (PWA) · Vitest.
 | --- | --- |
 | `npm run dev` | Dev server (generates game data first if missing) |
 | `npm run build` / `npm start` | Production build and server |
-| `npm test` | 82 unit tests: engine, genetics, sharing, telemetry, evolution, mastery, live tickets, expeditions, habitats, legacy, stat overrides, CSRF origin |
+| `npm test` | 98 unit tests: engine, genetics, sharing, telemetry, evolution, mastery, live tickets, expeditions, habitats, legacy, stat overrides, CSRF origin, Rift Deck cards |
 | `npm run balance` | Headless battle pacing sweep |
 | `npm run smoke` | End-to-end API + server replay check (server must be running) |
 | `npm run smoke:pvp` | Two-account matchmaking, replay and Elo check |

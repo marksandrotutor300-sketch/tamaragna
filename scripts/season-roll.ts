@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { getDb } from "../src/lib/db/client";
-import { profiles, pvpSnapshots, seasonRewards as seasonRewardsTable, seasons, towerRuns } from "../src/lib/db/schema";
+import { cardRuns, profiles, pvpSnapshots, seasonRewards as seasonRewardsTable, seasons, towerRuns } from "../src/lib/db/schema";
 import { seasonRewards as calculateRewards } from "../src/lib/game/season";
 
 async function main(): Promise<void> {
@@ -66,6 +66,11 @@ async function main(): Promise<void> {
     .update(towerRuns)
     .set({ status: "ended", endedAt: new Date() })
     .where(eq(towerRuns.status, "active"));
+
+  await db
+    .update(cardRuns)
+    .set({ status: "abandoned", endedAt: new Date(), pending: null })
+    .where(eq(cardRuns.status, "active"));
 
   const nextSeason = closingSeason + 1;
   await db

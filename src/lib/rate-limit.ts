@@ -41,6 +41,12 @@ export const LIMITS = {
   legacyRetire: { limit: 5, windowMs: 600_000 },
   dojoTrain: { limit: 6, windowMs: 600_000 },
   dojoSpar: { limit: 20, windowMs: 600_000 },
+  cardsStart: { limit: 3, windowMs: 10_000 },
+  cardsEnter: { limit: 30, windowMs: 10_000 },
+  cardsAction: { limit: 600, windowMs: 10_000 },
+  cardsReward: { limit: 20, windowMs: 10_000 },
+  cardsShop: { limit: 20, windowMs: 10_000 },
+  cardsAbandon: { limit: 3, windowMs: 60_000 },
 } as const satisfies Record<string, RateLimitRule>;
 
 /**

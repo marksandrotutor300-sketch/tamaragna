@@ -27,7 +27,7 @@ it is **not** hardened for adversarial scale — see [Known limitations](#known-
 | Breeding | ✅ Done | Level 10+, 2 eggs + 250 coins, IV/nature/rarity inheritance |
 | Team synergies | ✅ Done | Element focus, race bond, mixed company |
 | Status resistance | ✅ Done | Derived from VIT/LUK; reduces enemy status chance |
-| Daily/weekly quests + login streak | ✅ Done | UTC resets, idempotent claims, 4 daily + 3 weekly |
+| Daily/weekly quests + login streak | ✅ Done | UTC resets, idempotent claims, 5 daily + 5 weekly including card quests |
 | Seasons, placements, rewards | ✅ Done | K=40 placements, tiers, roll script, claim UI |
 | Featured species | ✅ Done | 3 per UTC day, 3× weight in Wild Eggs |
 | Tower draft + elite affixes | ✅ Done | 3-of-5 blessings between waves; 1–2 affixes on elite/boss waves |
@@ -37,6 +37,7 @@ it is **not** hardened for adversarial scale — see [Known limitations](#known-
 | Deterministic replay + verification | ✅ Done | Same engine client/server, FNV-1a checksum |
 | Auto & manual control | ✅ Done | Toggle on Tower and Arena; manual input log recorded and replayed |
 | Endless Tower | ✅ Done | Scaled waves, MVP every 10, HP carry-over, persisted runs |
+| Rift Deck | ✅ Done | Three-act roguelike card mode, three pet champions, server-authoritative actions, cards/relics, resumable runs, capped rewards, leaderboard, codex |
 | Tower leaderboard | ✅ Done | Highest wave, time tie-break |
 | Async PvP | ✅ Done | Ghost teams, rating matchmaking, Elo, history |
 | PvP snapshot freshness | ✅ Done | Refreshes on team edits, training, hatching and battle results |
@@ -97,7 +98,7 @@ encountered in the tower.
 | --- | --- |
 | `npx tsc --noEmit` | clean |
 | `npm run lint` | clean |
-| `npx vitest run` | 82/82 passing |
+| `npx vitest run` | 98/98 passing |
 | `npm run data:validate` | all checks passing |
 | `npm run build` | compiled successfully; all static pages generated |
 | PWA worker | `/serwist/sw.js` prerendered at build; 53 precache entries (~1.28 MB) |
@@ -217,7 +218,12 @@ rating moves by the Elo delta, history shows the result, and a duplicate submiss
 
 ### M2–M6 program
 
-- `/api/health` reports `schemaVersion: "0008_admin_roles"` on a fresh database.
+- `/api/health` reports `schemaVersion: "0009_card_crusade"` on a fresh database.
+- Rift Deck: created a three-champion squad, started a run, fought through Act 1 including
+  the boss, transitioned to Act 2, resolved battle rewards, treasure, elite, event, shop and
+  rest nodes, and ended with a legitimate defeat; reload/resume and rate limits behaved.
+  Engine tests cover opening hands, card play, determinism, turn draw, invalid actions and a
+  terminal result (10 tests).
 - Accounts: magic-link sign-in linked the existing device ranch (`linked profile: true`);
   `/api/auth/session` returned the email; push subscription stored; cron returned
   `configured: false` without VAPID keys.
@@ -268,6 +274,18 @@ The role lifecycle was exercised against a fresh database:
 - Owner transferred ownership; the old owner became admin and both events were logged.
 - The `ADMIN_TOKEN` bootstrap restored the original owner.
 - Role history retained every grant, revoke, rollback, transfer and demotion.
+
+### Admin economy/pets
+
+Fresh-database verification passed:
+
+- Admin searched a player by profile UUID.
+- Set coins, eggs and materials for one player and coins for another.
+- Each player immediately saw the changed wallet.
+- Created a custom species pet at Lv 50/5★.
+- Edited the pet's nickname and level.
+- Gifted the pet to another player; the recipient's ranch contained it.
+- Audit log contained `player.wallet`, `pet.create`, `pet.update` and `pet.transfer`.
 
 ### Manual browser checks
 
@@ -459,6 +477,28 @@ covers seven flows, including the new upgrade hub pages (see limitation 52).
     owner; there is no separate account-facing audit page yet.
 66. **Role changes are logged, not notified.** There is no email/push notification on grant or
     revoke yet; owners and active admins see `admin_role_events` in the console.
+67. **Admin economy edits are direct and unlimited.** Coins can be set up to 1B, eggs up to
+    1,000, and food/materials/legacy/spectator points up to 1M. There are no approval queues,
+    daily caps or anti-inflation checks; restrict admin access accordingly.
+68. **Economy and pet edits are audited but not reversible.** `admin_audit_log` records actor,
+    action and target (with action detail) but not a before/after snapshot. Only role changes
+    have rollback. Deleting pets/accounts, resetting passwords, banning users, changing species
+    on an existing pet, or changing rating/season are not exposed.
+69. **`/api/dev/boost` is a second privileged path.** Admin/owner sessions or `ADMIN_TOKEN` can
+    set a pet's level/star/species and the caller's coins/eggs/materials/legacy points. It is a
+    local seeding helper, not a UI workflow, and should be removed/disabled for a competitive
+    launch.
+70. **Admin audit attribution is label-based.** Token actions are logged as `ADMIN_TOKEN`; they
+    are not tied to an account. Role events do record the actor user id/label when available.
+71. **Rift Deck is PvE-only at launch.** There is no card PvP, ladder, ghost deck or async
+    opponent; the leaderboard is a solo-run clear board.
+72. **Rift Deck cards are run-only.** There is no persistent card collection outside a run;
+    rewards are drafted into `card_runs.deck` and disappear when the run ends.
+73. **Rift Deck balance is first-pass.** The engine and three-act loop are verified end to end,
+    but the automated run lost in Act 2; difficulty, card rates and relic value still need
+    human playtesting and seeded balance sweeps.
+74. **Rift Deck reuses existing art.** Cards use existing pet sprites and RO skill icons with
+    CSS frames; there is no authored card art or animation pass.
 
 ## Next steps
 

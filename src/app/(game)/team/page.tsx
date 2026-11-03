@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Check, Dna, Pencil, Plus, Star, Trash2, X } from "lucide-react";
+import { Check, Dna, Layers, Pencil, Plus, Star, Trash2, X } from "lucide-react";
 import { Button, Panel, SectionTitle, Spinner } from "@/components/ui/primitives";
 import { PetSprite } from "@/components/pet/PetSprite";
 import { NatureBadge, StarPips } from "@/components/pet/Genetics";
@@ -92,11 +92,18 @@ export default function TeamPage() {
             on a short cooldown.
           </p>
         </div>
-        <Link href="/breed">
-          <Button variant="ghost" size="sm">
-            <Dna className="h-4 w-4" /> Breeding
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/cards">
+            <Button variant="ghost" size="sm">
+              <Layers className="h-4 w-4" /> Rift Deck
+            </Button>
+          </Link>
+          <Link href="/breed">
+            <Button variant="ghost" size="sm">
+              <Dna className="h-4 w-4" /> Breeding
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">

@@ -15,6 +15,7 @@ const STATIC_PATHS = [
   "/quests",
   "/pvp",
   "/tower",
+  "/cards",
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

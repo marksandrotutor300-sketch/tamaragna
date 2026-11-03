@@ -3,7 +3,8 @@ export type Feature =
   | "telemetry"
   | "accounts"
   | "evolution"
-  | "livePvp";
+  | "livePvp"
+  | "cards";
 
 const ENV_KEYS: Record<Feature, string> = {
   share: "FEATURE_SHARE",
@@ -11,6 +12,7 @@ const ENV_KEYS: Record<Feature, string> = {
   accounts: "FEATURE_ACCOUNTS",
   evolution: "FEATURE_EVOLUTION",
   livePvp: "FEATURE_LIVE_PVP",
+  cards: "FEATURE_CARDS",
 };
 
 // Share and telemetry are the low-risk M1/M2 features and ship enabled.
@@ -21,6 +23,7 @@ const DEFAULT_ENABLED: Record<Feature, boolean> = {
   accounts: true,
   evolution: true,
   livePvp: true,
+  cards: true,
 };
 
 export function isFeatureEnabled(feature: Feature): boolean {

@@ -4,6 +4,7 @@ import {
   Compass,
   Dna,
   Hammer,
+  Layers,
   Settings,
   Shield,
   ShoppingBag,
@@ -15,6 +16,13 @@ import { isSuperAdminUser } from "@/lib/admin";
 import { readSession } from "@/lib/db/session";
 
 const LINKS = [
+  {
+    href: "/cards",
+    title: "Rift Deck",
+    body: "Three-act roguelike card runs with your three team pets.",
+    icon: Layers,
+    color: "text-gold",
+  },
   {
     href: "/guild",
     title: "Guild hall",

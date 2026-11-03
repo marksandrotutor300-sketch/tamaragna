@@ -13,6 +13,7 @@ const RESERVED_SLUGS = new Set([
   "battle",
   "bestiary",
   "breed",
+  "cards",
   "hatch",
   "offline",
   "pvp",
