@@ -49,6 +49,35 @@ Axie/Slay-the-Spire code, art, card names or assets.
   sprites and skill icons are reused.
 - No new art is authored for this mode.
 
+## Advanced upgrades
+
+Rift Deck now has five advanced upgrade layers:
+
+- **Ascension A0–A5.** A1–A5 unlock from completed wins. A1 adds enemy HP, A2 enemy damage,
+  A3 reduces rest healing, A4 reduces card offers, and A5 adds boss HP and score. Ascension
+  also raises score.
+- **Signature cards.** At a rest site, fuse a card with a duplicate copy into a Signature
+  (`Name++`): a second upgrade tier with lower cost and stronger effects.
+- **Signature relics.** At a shop, evolve an owned base relic into a `+` version with stronger
+  effects for 100 run gold (shop discounts apply).
+- **Rift Paths.** Five one-per-run paths: Balanced, Ember, Root, Tide and Shadow, changing
+  champion HP, enemy HP, starting gold, card offers, rest/shop values and score.
+- **Rift Edicts.** Five permanent account upgrades bought with Rift Essence: Open Hand,
+  Iron Heart, Relic Seeker, Second Wind and Rift Hunger. Runs snapshot owned edicts at start.
+  Essence is earned at run end (1 loss / 2 win, plus 1 per act boss).
+
+### Persistence
+
+`card_runs` also stores `ascension`, `path`, `edicts` and `reward_essence`; profiles store
+`rift_essence` and `rift_edicts`. Migration `0010_rift_upgrades` is additive.
+
+### APIs
+
+- `POST /api/cards/runs` accepts `{ ascension?, path? }`.
+- `POST /api/cards/runs/[id]/rest` accepts `choice: "signature"`.
+- `POST /api/cards/runs/[id]/shop` accepts `{ action: "evolve", relicId }`.
+- `POST /api/cards/edicts` purchases `{ id }`.
+
 ## Server authority
 
 Card mode is PvE only. The server owns the run map, deck, relics, champions and battle state.
@@ -90,7 +119,7 @@ resumes the exact server state.
 ## Feature flag and verification
 
 - `FEATURE_CARDS=0` disables the API with 404.
-- Unit tests: `src/lib/cards/engine.test.ts`.
-- End-to-end manual/HTTP flow: start → enter battle → play actions → claim reward → rest/shop/
-  event → boss → act transition → terminal result.
-- Health: `GET /api/health` should report `0009_card_crusade`.
+- Unit tests: `src/lib/cards/engine.test.ts`, `src/lib/cards/upgrades.test.ts`.
+- End-to-end manual/HTTP flow: start with path/ascension → enter battle → play actions → claim
+  reward → rest/shop/event → boss → act transition → terminal result.
+- Health: `GET /api/health` should report `0010_rift_upgrades`.

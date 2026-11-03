@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS profiles (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS placement_matches smallint NOT NULL DEFAULT 0;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS rift_essence integer NOT NULL DEFAULT 0;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS rift_edicts jsonb NOT NULL DEFAULT '[]'::jsonb;
 
 CREATE TABLE IF NOT EXISTS seasons (
   id smallint PRIMARY KEY,
@@ -98,6 +100,9 @@ CREATE TABLE IF NOT EXISTS card_runs (
   relics jsonb NOT NULL DEFAULT '[]'::jsonb,
   champions jsonb NOT NULL,
   run_gold integer NOT NULL DEFAULT 0,
+  ascension smallint NOT NULL DEFAULT 0,
+  path text NOT NULL DEFAULT 'balanced',
+  edicts jsonb NOT NULL DEFAULT '[]'::jsonb,
   pending jsonb,
   score integer NOT NULL DEFAULT 0,
   elapsed_ms integer NOT NULL DEFAULT 0,
@@ -107,6 +112,7 @@ CREATE TABLE IF NOT EXISTS card_runs (
   reward_materials integer NOT NULL DEFAULT 0,
   reward_eggs integer NOT NULL DEFAULT 0,
   reward_xp integer NOT NULL DEFAULT 0,
+  reward_essence integer NOT NULL DEFAULT 0,
   rewarded_at timestamptz,
   started_at timestamptz NOT NULL DEFAULT now(),
   ended_at timestamptz
@@ -116,6 +122,10 @@ CREATE INDEX IF NOT EXISTS card_runs_leaderboard_idx
   ON card_runs (status, score DESC, elapsed_ms);
 CREATE UNIQUE INDEX IF NOT EXISTS card_runs_active_idx
   ON card_runs (owner_id) WHERE status = 'active';
+ALTER TABLE card_runs ADD COLUMN IF NOT EXISTS ascension smallint NOT NULL DEFAULT 0;
+ALTER TABLE card_runs ADD COLUMN IF NOT EXISTS path text NOT NULL DEFAULT 'balanced';
+ALTER TABLE card_runs ADD COLUMN IF NOT EXISTS edicts jsonb NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE card_runs ADD COLUMN IF NOT EXISTS reward_essence integer NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS card_battles (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

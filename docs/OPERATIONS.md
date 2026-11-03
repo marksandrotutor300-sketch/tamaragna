@@ -115,20 +115,21 @@ The DDL also adds `pets.nature`, `pets.star`, `pets.loadout`, `pets.evolution_st
 `tournaments`, `tournament_entries`, `tournament_matches`, `guilds`, `guild_members`,
 `guild_raids`, `guild_contributions`, `market_listings`, `expeditions`, `ranch_visits`,
 `ranked_cups`, `spectator_picks`, `legacy_marks`, `dojo_ghosts`, `dojo_runs`, `card_runs`,
-`card_battles`, `admin_audit_log` and `admin_role_events`. Migration `0009_card_crusade` adds
-the Rift Deck run/battle tables, one active-run index and the once-only reward ledger.
+`card_battles`, `admin_audit_log` and `admin_role_events`. Migration `0010_rift_upgrades` adds
+the Rift Deck ascension/path/edict fields and profile Rift Essence/edicts.
 Existing pets default to Hardy, 1★, stage 1 and the first three attacks plus one support; no manual
 migration is needed. New profiles join the highest season in use. `ensure-data` detects stale
 four-skill data and generates the evolution graph when missing.
 
-The current schema version is **`0009_card_crusade`**.
+The current schema version is **`0010_rift_upgrades`**.
 
 ### Rift Deck controls
 
 `FEATURE_CARDS=0` disables the card API (404). Card runs require three team pets; one active
 run per profile. Card battle actions are versioned server transactions, not client-trusted
 state. Main-economy rewards are once-only per run with a UTC daily cap; abandoned runs pay
-nothing. See [RIFT-DECK.md](RIFT-DECK.md).
+nothing. Ascension/path are snapshotted at start. Rift Edicts are purchased permanently with
+Rift Essence and snapshotted into runs. See [RIFT-DECK.md](RIFT-DECK.md).
 
 ### Versioned migrations
 

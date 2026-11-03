@@ -13,16 +13,9 @@ import {
   RunResult,
   ShopPanel,
 } from "@/components/cards/RunPanels";
-import {
-  useAbandonCardRun,
-  useCardEvent,
-  useCardRun,
-  useClaimCardReward,
-  useEnterCardNode,
-  useRestCardRun,
-  useShopCardRun,
-  useStartCardRun,
-} from "@/hooks/useCards";
+import { useAbandonCardRun, useCardEvent, useCardRun, useClaimCardReward, useEnterCardNode, useRestCardRun, useShopCardRun, useStartCardRun } from "@/hooks/useCards";
+import { getEdict } from "@/lib/cards/content/edicts";
+import { getRiftPath } from "@/lib/cards/content/paths";
 import { cn } from "@/lib/client/cn";
 
 export default function CardRunPage() {
@@ -94,6 +87,27 @@ export default function CardRunPage() {
         <Hud icon={<RotateCcw className="h-3.5 w-3.5 text-muted" />} label="Score" value={run.score.toLocaleString()} />
       </div>
 
+      <div className="flex flex-wrap gap-2 text-[10px]">
+        <span className="rounded-full border border-gold/30 bg-gold/10 px-2 py-1 text-gold">
+          A{run.ascension}
+        </span>
+        <span className="rounded-full border border-teal/30 bg-teal/10 px-2 py-1 text-teal">
+          {getRiftPath(run.path).name}
+        </span>
+        {run.edicts.map((id) => {
+          const edict = getEdict(id);
+          return edict ? (
+            <span
+              key={id}
+              title={edict.description}
+              className="rounded-full border border-violet/30 bg-violet/10 px-2 py-1 text-violet"
+            >
+              {edict.name}
+            </span>
+          ) : null;
+        })}
+      </div>
+
       {run.relicDefinitions.length > 0 ? (
         <Panel>
           <SectionTitle hint={`${run.relicDefinitions.length} relics`}>Relics</SectionTitle>
@@ -127,6 +141,7 @@ export default function CardRunPage() {
           busy={rest.isPending}
           onHeal={() => rest.mutate({ choice: "heal" })}
           onUpgrade={(instanceId) => rest.mutate({ choice: "upgrade", instanceId })}
+          onSignature={(instanceId) => rest.mutate({ choice: "signature", instanceId })}
         />
       ) : null}
 
@@ -137,6 +152,7 @@ export default function CardRunPage() {
           busy={shop.isPending}
           onBuy={(kind, id) => shop.mutate({ action: "buy", kind, id })}
           onRemove={(instanceId) => shop.mutate({ action: "remove", instanceId })}
+          onEvolve={(relicId) => shop.mutate({ action: "evolve", relicId })}
           onLeave={() => shop.mutate({ action: "leave" })}
         />
       ) : null}

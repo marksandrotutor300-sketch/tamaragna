@@ -55,6 +55,8 @@ export const profiles = pgTable("profiles", {
   spectatorPoints: integer("spectator_points").notNull().default(0),
   habitat: text("habitat").notNull().default("verdant"),
   materials: integer("materials").notNull().default(0),
+  riftEssence: integer("rift_essence").notNull().default(0),
+  riftEdicts: jsonb("rift_edicts").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   uniqueIndex("profiles_public_slug_idx")
@@ -191,6 +193,9 @@ export const cardRuns = pgTable(
     relics: jsonb("relics").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
     champions: jsonb("champions").$type<CardChampion[]>().notNull(),
     runGold: integer("run_gold").notNull().default(0),
+    ascension: smallint("ascension").notNull().default(0),
+    path: text("path").notNull().default("balanced"),
+    edicts: jsonb("edicts").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
     pending: jsonb("pending").$type<PendingNode | null>(),
     score: integer("score").notNull().default(0),
     elapsedMs: integer("elapsed_ms").notNull().default(0),
@@ -203,6 +208,7 @@ export const cardRuns = pgTable(
     rewardMaterials: integer("reward_materials").notNull().default(0),
     rewardEggs: integer("reward_eggs").notNull().default(0),
     rewardXp: integer("reward_xp").notNull().default(0),
+    rewardEssence: integer("reward_essence").notNull().default(0),
     rewardedAt: timestamp("rewarded_at", { withTimezone: true }),
     startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
     endedAt: timestamp("ended_at", { withTimezone: true }),

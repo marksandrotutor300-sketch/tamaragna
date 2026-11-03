@@ -20,6 +20,7 @@ import {
   CARD_DAILY_CAP,
   MAX_DECK_SIZE,
   advanceAfterBoss,
+  applyScoreMultiplier,
   availableRunNodes,
   createChampions,
   createRun,
@@ -29,10 +30,12 @@ import {
   rewardSummary,
 } from "@/lib/cards/run";
 import { buildEncounter } from "@/lib/cards/content/enemies";
-import { addCard, removeCard, upgradeInstance } from "@/lib/cards/deck";
+import { addCard, removeCard, signatureInstance, upgradeInstance } from "@/lib/cards/deck";
 import { cardForInstance, getCard } from "@/lib/cards/content/cards";
-import { getRelic, relicPoolForAct } from "@/lib/cards/content/relics";
+import { getRelic, evolveRelicId, isEvolvedRelic, relicPoolForAct } from "@/lib/cards/content/relics";
 import { getEvent } from "@/lib/cards/content/events";
+import { allRiftPaths, getRiftPath } from "@/lib/cards/content/paths";
+import { allEdicts, getEdict, hasEdict } from "@/lib/cards/content/edicts";
 import { isNodeReachable, nodeById } from "@/lib/cards/map";
 import type {
   CardAction,
@@ -56,6 +59,9 @@ function asRunData(row: CardRun): CardRunData {
     relics: row.relics,
     champions: row.champions,
     runGold: row.runGold,
+    ascension: row.ascension,
+    path: row.path,
+    edicts: row.edicts,
     pending: row.pending ?? null,
     score: row.score,
     elapsedMs: row.elapsedMs,
@@ -63,6 +69,7 @@ function asRunData(row: CardRun): CardRunData {
     startedAt: row.startedAt.toISOString(),
     endedAt: row.endedAt?.toISOString() ?? null,
     completedNodeIds: row.completedNodeIds,
+    rewardEssence: row.rewardEssence,
   };
 }
 
@@ -73,7 +80,11 @@ function viewForRow(row: CardRun): CardRunView {
     ...rest,
     availableNodes: availableRunNodes(run),
     deckCards: run.deck.cards.flatMap((instance) => {
-      const definition = cardForInstance(instance.cardId, instance.upgraded);
+      const definition = cardForInstance(
+        instance.cardId,
+        instance.upgraded,
+        instance.signature,
+      );
       return definition ? [{ ...instance, definition }] : [];
     }),
     relicDefinitions: run.relics.flatMap((id) => {
@@ -104,7 +115,10 @@ export async function getActiveCardRun(profileId: string): Promise<CardRun | nul
   return rows[0] ?? null;
 }
 
-export async function startCardRun(profile: Profile): Promise<CardRunView> {
+export async function startCardRun(
+  profile: Profile,
+  options: { ascension?: number; path?: string } = {},
+): Promise<CardRunView> {
   const active = await getActiveCardRun(profile.id);
   if (active) return viewForRow(active);
 
@@ -113,7 +127,23 @@ export async function startCardRun(profile: Profile): Promise<CardRunView> {
     throw new CardRuleError("Field exactly three team pets before starting a run.", 422);
   }
 
-  const champions = createChampions(teamToCombatants(team));
+  const db = await getDb();
+  const wins = await db
+    .select({ id: cardRuns.id })
+    .from(cardRuns)
+    .where(and(eq(cardRuns.ownerId, profile.id), eq(cardRuns.status, "won")));
+  const maxAscension = Math.min(5, wins.length);
+  const ascension = Math.max(0, Math.min(maxAscension, Math.round(options.ascension ?? 0)));
+  const pathId = options.path ?? "balanced";
+  if (!allRiftPaths().some((path) => path.id === pathId)) {
+    throw new CardRuleError("Unknown Rift Path.", 422);
+  }
+  const path = getRiftPath(pathId);
+  const edicts = profile.riftEdicts ?? [];
+  const hpMultiplier =
+    path.championHpMultiplier * (hasEdict(edicts, "iron-heart") ? 1.1 : 1);
+
+  const champions = createChampions(teamToCombatants(team), hpMultiplier);
   const seed = crypto.randomUUID();
   const id = crypto.randomUUID();
   const season = await currentSeason();
@@ -124,8 +154,17 @@ export async function startCardRun(profile: Profile): Promise<CardRunView> {
     champions,
     season,
     startedAt: new Date().toISOString(),
+    ascension,
+    path: pathId,
+    edicts,
+    startGold: path.startGold,
   });
-  const db = await getDb();
+
+  if (hasEdict(edicts, "relic-seeker")) {
+    const relic = relicPoolForAct(1)[new Rng(`edict-seeker:${seed}`).int(0, relicPoolForAct(1).length - 1)];
+    if (relic) data.relics = [relic.id];
+  }
+
   const inserted = await db
     .insert(cardRuns)
     .values({
@@ -139,7 +178,10 @@ export async function startCardRun(profile: Profile): Promise<CardRunView> {
       deck: data.deck,
       relics: data.relics,
       champions: data.champions,
-      runGold: 0,
+      runGold: data.runGold,
+      ascension: data.ascension,
+      path: data.path,
+      edicts: data.edicts,
       pending: null,
       score: 0,
       elapsedMs: 0,
@@ -174,11 +216,20 @@ export async function loadCardRunView(profileId: string, runId: string): Promise
 export async function getCardRunHub(profileId: string) {
   const db = await getDb();
   const active = await getActiveCardRun(profileId);
+  const wins = await db
+    .select({ id: cardRuns.id })
+    .from(cardRuns)
+    .where(and(eq(cardRuns.ownerId, profileId), eq(cardRuns.status, "won")));
   const best = await db
     .select()
     .from(cardRuns)
     .where(and(eq(cardRuns.ownerId, profileId), eq(cardRuns.status, "won")))
     .orderBy(desc(cardRuns.score), asc(cardRuns.elapsedMs))
+    .limit(1);
+  const profileRows = await db
+    .select({ riftEssence: profiles.riftEssence, riftEdicts: profiles.riftEdicts })
+    .from(profiles)
+    .where(eq(profiles.id, profileId))
     .limit(1);
   const team = await loadTeamPets(profileId);
   const leaderboard = await getCardLeaderboard();
@@ -187,6 +238,12 @@ export async function getCardRunHub(profileId: string) {
     best: best[0] ? viewForRow(best[0]) : null,
     teamSize: team.length,
     canStart: team.length === 3,
+    wins: wins.length,
+    maxAscension: Math.min(5, wins.length),
+    riftEssence: profileRows[0]?.riftEssence ?? 0,
+    edicts: profileRows[0]?.riftEdicts ?? [],
+    edictDefinitions: allEdicts(),
+    paths: allRiftPaths(),
     leaderboard,
   };
 }
@@ -225,6 +282,24 @@ function pendingBattleFor(runId: string, nodeId: string) {
   );
 }
 
+function cardChoiceCount(run: CardRunData, boss = false): number {
+  const path = getRiftPath(run.path);
+  const edict = hasEdict(run.edicts, "rift-hunger") ? 1 : 0;
+  const ascensionPenalty = run.ascension >= 4 ? 1 : 0;
+  return Math.max(1, 3 + path.rewardBonus + edict + (boss ? 0 : 0) - ascensionPenalty);
+}
+
+function encounterMods(run: CardRunData, boss: boolean) {
+  const path = getRiftPath(run.path);
+  const ascensionHp = run.ascension >= 1 ? 1.1 : 1;
+  const bossHp = boss && run.ascension >= 5 ? 1.2 : 1;
+  const ascensionDamage = run.ascension >= 2 ? 1.1 : 1;
+  return {
+    hpMultiplier: path.enemyHpMultiplier * ascensionHp * bossHp,
+    damageMultiplier: path.enemyDamageMultiplier * ascensionDamage,
+  };
+}
+
 export async function enterCardNode(
   profileId: string,
   runId: string,
@@ -251,7 +326,7 @@ export async function enterCardNode(
 
   if (node.type === "battle" || node.type === "elite" || node.type === "boss") {
     const kind = node.type === "boss" ? "boss" : node.type === "elite" ? "elite" : "normal";
-    const enemies = buildEncounter(run.seed, run.act, kind, node.floor);
+    const enemies = buildEncounter(run.seed, run.act, kind, node.floor, encounterMods(run, kind === "boss"));
     const battleSeed = checksum(`${run.seed}:${node.id}`);
     const state = createCardBattle({
       seed: battleSeed,
@@ -259,6 +334,7 @@ export async function enterCardNode(
       enemies,
       deck: run.deck.cards,
       relics: run.relics,
+      edicts: run.edicts,
     });
     const inserted = await db
       .insert(cardBattles)
@@ -277,7 +353,9 @@ export async function enterCardNode(
     return { run: viewForRow(row), battle: battleView(inserted[0]) };
   }
 
-  const pending = rewardForNode(run.seed, run.act, node, run.deck.cards.length, run.relics);
+  const pending = rewardForNode(run.seed, run.act, node, run.deck.cards.length, run.relics, {
+    cardCount: cardChoiceCount(run),
+  });
   if (!pending) throw new CardRuleError("This node has no interaction.", 422);
   const updated = await db
     .update(cardRuns)
@@ -365,6 +443,7 @@ export async function actOnCardBattle(
           node,
           run.deck.cards.length,
           run.relics,
+          { cardCount: cardChoiceCount(run, node.type === "boss") },
         );
         scoreRun = markNodeComplete({ ...healed, pending: rewardNode }, node.id);
         pending = rewardNode;
@@ -374,6 +453,17 @@ export async function actOnCardBattle(
         }
       }
       battleStatus = "complete";
+    }
+
+    if (scoreRun.status === "won" || scoreRun.status === "lost") {
+      scoreRun = {
+        ...scoreRun,
+        score: applyScoreMultiplier(
+          scoreRun.score,
+          scoreRun.ascension,
+          getRiftPath(scoreRun.path).scoreMultiplier,
+        ),
+      };
     }
 
     const updatedBattle = await tx
@@ -399,6 +489,9 @@ export async function actOnCardBattle(
         nodeId: scoreRun.nodeId,
         champions: scoreRun.champions,
         runGold: scoreRun.runGold,
+        ascension: scoreRun.ascension,
+        path: scoreRun.path,
+        edicts: scoreRun.edicts,
         pending: scoreRun.pending,
         score: scoreRun.score,
         completedNodeIds: scoreRun.completedNodeIds,
@@ -492,7 +585,7 @@ export async function claimCardReward(
 export async function resolveRest(
   profileId: string,
   runId: string,
-  choice: { choice: "heal" | "upgrade"; instanceId?: string },
+  choice: { choice: "heal" | "upgrade" | "signature"; instanceId?: string },
 ): Promise<CardRunView> {
   const row = await loadCardRun(profileId, runId);
   const run = asRunData(row);
@@ -502,16 +595,33 @@ export async function resolveRest(
   let champions = run.champions;
   let deck = run.deck;
   if (choice.choice === "heal") {
-    const bonus = run.relics.reduce(
+    const relicBonus = run.relics.reduce(
       (sum, id) => sum + (getRelic(id)?.effect.restHealBonus ?? 0),
       0,
     );
-    champions = championHeal(run.champions, 0.3 + bonus);
+    const path = getRiftPath(run.path);
+    const ascensionPenalty = run.ascension >= 3 ? 0.1 : 0;
+    champions = championHeal(
+      run.champions,
+      Math.max(0, 0.3 + relicBonus + path.restBonus - ascensionPenalty),
+    );
+  } else if (choice.choice === "signature") {
+    if (!choice.instanceId) throw new CardRuleError("Choose a card to forge.", 422);
+    const target = deck.cards.find((card) => card.instanceId === choice.instanceId);
+    if (!target) throw new CardRuleError("Card not found.", 422);
+    if (target.signature) throw new CardRuleError("This card is already a signature.", 422);
+    const duplicate = deck.cards.find(
+      (card) => card.instanceId !== target.instanceId && card.cardId === target.cardId,
+    );
+    if (!duplicate) {
+      throw new CardRuleError("Signature forging needs a duplicate copy of the card.", 422);
+    }
+    deck = signatureInstance(removeCard(deck, duplicate.instanceId), target.instanceId);
   } else {
     if (!choice.instanceId) throw new CardRuleError("Choose a card to upgrade.", 422);
-    if (!deck.cards.some((card) => card.instanceId === choice.instanceId)) {
-      throw new CardRuleError("Card not found.", 422);
-    }
+    const target = deck.cards.find((card) => card.instanceId === choice.instanceId);
+    if (!target) throw new CardRuleError("Card not found.", 422);
+    if (target.signature) throw new CardRuleError("Signature cards cannot be upgraded further.", 422);
     deck = upgradeInstance(deck, choice.instanceId);
   }
   const nodeId = run.pending.nodeId;
@@ -538,7 +648,8 @@ export async function resolveShop(
   body:
     | { action: "leave" }
     | { action: "buy"; kind: "card" | "relic"; id: string }
-    | { action: "remove"; instanceId: string },
+    | { action: "remove"; instanceId: string }
+    | { action: "evolve"; relicId: string },
 ): Promise<CardRunView> {
   const row = await loadCardRun(profileId, runId);
   const run = asRunData(row);
@@ -562,15 +673,27 @@ export async function resolveShop(
     return viewForRow(updated[0]);
   }
 
-  const discount = run.relics.reduce(
-    (sum, id) => sum + (getRelic(id)?.effect.shopDiscount ?? 0),
-    0,
+  const path = getRiftPath(run.path);
+  const discount = Math.min(
+    0.5,
+    path.shopDiscount +
+      run.relics.reduce(
+        (sum, id) => sum + (getRelic(id)?.effect.shopDiscount ?? 0),
+        0,
+      ),
   );
   let runGold = run.runGold;
   let deck = run.deck;
   let relics = run.relics;
 
-  if (body.action === "remove") {
+  if (body.action === "evolve") {
+    const base = run.relics.find((id) => id === body.relicId);
+    if (!base || isEvolvedRelic(base)) throw new CardRuleError("Relic cannot be evolved.", 422);
+    const cost = Math.round(100 * (1 - discount));
+    if (runGold < cost) throw new CardRuleError("Not enough run gold.", 422);
+    runGold -= cost;
+    relics = relics.map((id) => (id === body.relicId ? evolveRelicId(id) : id));
+  } else if (body.action === "remove") {
     const cost = Math.round(run.pending.removalCost * (1 - discount));
     if (runGold < cost) throw new CardRuleError("Not enough run gold.", 422);
     if (!deck.cards.some((card) => card.instanceId === body.instanceId)) {
@@ -737,6 +860,10 @@ export async function grantCardRunRewards(profile: Profile, runId: string): Prom
     Math.min(summary.materials, CARD_DAILY_CAP.materials - Number(daily[0]?.materials ?? 0)),
   );
   const eggs = Math.max(0, Math.min(summary.eggs, CARD_DAILY_CAP.eggs - Number(daily[0]?.eggs ?? 0)));
+  const bossCount = run.completedNodeIds.filter(
+    (nodeId) => nodeById(run.map, nodeId)?.type === "boss",
+  ).length;
+  const essence = summary.essence + bossCount;
 
   await db.transaction(async (tx) => {
     await tx
@@ -745,6 +872,7 @@ export async function grantCardRunRewards(profile: Profile, runId: string): Prom
         coins: sql`${profiles.coins} + ${coins}`,
         materials: sql`${profiles.materials} + ${materials}`,
         eggs: sql`${profiles.eggs} + ${eggs}`,
+        riftEssence: sql`${profiles.riftEssence} + ${essence}`,
       })
       .where(eq(profiles.id, profile.id));
 
@@ -770,9 +898,50 @@ export async function grantCardRunRewards(profile: Profile, runId: string): Prom
         rewardMaterials: materials,
         rewardEggs: eggs,
         rewardXp: summary.xp,
+        rewardEssence: essence,
         rewardedAt: new Date(),
       })
       .where(eq(cardRuns.id, runId));
+  });
+}
+
+export async function purchaseEdict(
+  profile: Profile,
+  id: string,
+): Promise<{ essence: number; edicts: string[] }> {
+  const edict = getEdict(id);
+  if (!edict) throw new CardRuleError("Unknown Rift Edict.", 404);
+  const db = await getDb();
+  return db.transaction(async (tx) => {
+    const rows = await tx
+      .select({
+        riftEssence: profiles.riftEssence,
+        riftEdicts: profiles.riftEdicts,
+      })
+      .from(profiles)
+      .where(eq(profiles.id, profile.id))
+      .limit(1);
+    const current = rows[0];
+    if (!current) throw new CardRuleError("Profile not found.", 404);
+    if (current.riftEdicts.includes(id)) {
+      throw new CardRuleError("That edict is already owned.", 409);
+    }
+    if (current.riftEssence < edict.cost) {
+      throw new CardRuleError("Not enough Rift Essence.", 422);
+    }
+    const edicts = [...current.riftEdicts, id];
+    const updated = await tx
+      .update(profiles)
+      .set({
+        riftEssence: current.riftEssence - edict.cost,
+        riftEdicts: edicts,
+      })
+      .where(eq(profiles.id, profile.id))
+      .returning({ riftEssence: profiles.riftEssence, riftEdicts: profiles.riftEdicts });
+    return {
+      essence: updated[0]?.riftEssence ?? current.riftEssence - edict.cost,
+      edicts: updated[0]?.riftEdicts ?? edicts,
+    };
   });
 }
 

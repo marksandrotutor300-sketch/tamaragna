@@ -47,6 +47,7 @@ export const LIMITS = {
   cardsReward: { limit: 20, windowMs: 10_000 },
   cardsShop: { limit: 20, windowMs: 10_000 },
   cardsAbandon: { limit: 3, windowMs: 60_000 },
+  cardsEdicts: { limit: 10, windowMs: 60_000 },
 } as const satisfies Record<string, RateLimitRule>;
 
 /**

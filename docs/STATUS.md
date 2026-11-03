@@ -38,6 +38,7 @@ it is **not** hardened for adversarial scale — see [Known limitations](#known-
 | Auto & manual control | ✅ Done | Toggle on Tower and Arena; manual input log recorded and replayed |
 | Endless Tower | ✅ Done | Scaled waves, MVP every 10, HP carry-over, persisted runs |
 | Rift Deck | ✅ Done | Three-act roguelike card mode, three pet champions, server-authoritative actions, cards/relics, resumable runs, capped rewards, leaderboard, codex |
+| Rift Deck advanced upgrades | ✅ Done | A0–A5 Ascension, Signature card fusion, evolved `+` relics, five Rift Paths, five persistent Rift Edicts |
 | Tower leaderboard | ✅ Done | Highest wave, time tie-break |
 | Async PvP | ✅ Done | Ghost teams, rating matchmaking, Elo, history |
 | PvP snapshot freshness | ✅ Done | Refreshes on team edits, training, hatching and battle results |
@@ -98,7 +99,7 @@ encountered in the tower.
 | --- | --- |
 | `npx tsc --noEmit` | clean |
 | `npm run lint` | clean |
-| `npx vitest run` | 98/98 passing |
+| `npx vitest run` | 105/105 passing |
 | `npm run data:validate` | all checks passing |
 | `npm run build` | compiled successfully; all static pages generated |
 | PWA worker | `/serwist/sw.js` prerendered at build; 53 precache entries (~1.28 MB) |
@@ -218,7 +219,12 @@ rating moves by the Elo delta, history shows the result, and a duplicate submiss
 
 ### M2–M6 program
 
-- `/api/health` reports `schemaVersion: "0009_card_crusade"` on a fresh database.
+- `/api/health` reports `schemaVersion: "0010_rift_upgrades"` on a fresh database.
+- Rift Deck advanced upgrades: start accepted `{ ascension: 0, path: "root" }`, the run
+  snapshotted the path/ascension/edicts, the hub exposed five paths and five edicts, and a
+  three-act smoke run reached Act 2 with rewards and capped coins. Unit coverage exercises
+  signatures, evolved relics, Open Hand, Second Wind, ascension/path scoring and five-upgrade
+  shape (7 new tests).
 - Rift Deck: created a three-champion squad, started a run, fought through Act 1 including
   the boss, transitioned to Act 2, resolved battle rewards, treasure, elite, event, shop and
   rest nodes, and ended with a legitimate defeat; reload/resume and rate limits behaved.
@@ -499,6 +505,9 @@ covers seven flows, including the new upgrade hub pages (see limitation 52).
     human playtesting and seeded balance sweeps.
 74. **Rift Deck reuses existing art.** Cards use existing pet sprites and RO skill icons with
     CSS frames; there is no authored card art or animation pass.
+75. **Rift Deck advanced upgrades are first-pass.** Ascension, Rift Paths, signature forging,
+    relic evolution and Rift Edicts are verified by unit/HTTP checks, but endgame difficulty,
+    essence pacing and the five paths still need human balance testing.
 
 ## Next steps
 

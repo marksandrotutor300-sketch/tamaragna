@@ -4,6 +4,8 @@ import { ArrowRight, Coins, RotateCcw, Sparkles, Star, Upload } from "lucide-rea
 import { Button, Panel, SectionTitle } from "@/components/ui/primitives";
 import { CardFace } from "@/components/cards/CardFace";
 import { getCard } from "@/lib/cards/content/cards";
+import { getRelic, isEvolvedRelic } from "@/lib/cards/content/relics";
+import { getRiftPath } from "@/lib/cards/content/paths";
 import { cn } from "@/lib/client/cn";
 import type { CardRunView, CardRewardOption, PendingNode } from "@/lib/cards/types";
 
@@ -64,12 +66,19 @@ export function RestPanel({
   busy,
   onHeal,
   onUpgrade,
+  onSignature,
 }: {
   run: CardRunView;
   busy: boolean;
   onHeal: () => void;
   onUpgrade: (instanceId: string) => void;
+  onSignature: (instanceId: string) => void;
 }) {
+  const duplicateCards = run.deckCards.filter(
+    (card) =>
+      !card.signature &&
+      run.deckCards.filter((entry) => entry.cardId === card.cardId).length > 1,
+  );
   return (
     <Panel>
       <SectionTitle hint="choose one">Rest site</SectionTitle>
@@ -81,17 +90,17 @@ export function RestPanel({
           size="sm"
           variant="ghost"
           onClick={() => {
-            const first = run.deckCards.find((card) => !card.upgraded);
+            const first = run.deckCards.find((card) => !card.upgraded && !card.signature);
             if (first) onUpgrade(first.instanceId);
           }}
-          disabled={busy || !run.deckCards.some((card) => !card.upgraded)}
+          disabled={busy || !run.deckCards.some((card) => !card.upgraded && !card.signature)}
         >
           <Upload className="h-3.5 w-3.5" /> Upgrade first unupgraded
         </Button>
       </div>
       <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
         {run.deckCards
-          .filter((card) => !card.upgraded)
+          .filter((card) => !card.upgraded && !card.signature)
           .map((card) => (
             <CardFace
               key={card.instanceId}
@@ -102,6 +111,27 @@ export function RestPanel({
             />
           ))}
       </div>
+      {duplicateCards.length > 0 ? (
+        <div className="mt-3 rounded-xl border border-gold/30 bg-gold/5 p-3">
+          <div className="text-[10px] uppercase tracking-[0.14em] text-gold">
+            Signature forge
+          </div>
+          <p className="mt-1 text-[10px] text-muted">
+            Consume a duplicate copy to turn one card into a stronger Signature.
+          </p>
+          <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+            {[...new Map(duplicateCards.map((card) => [card.cardId, card])).values()].map((card) => (
+              <CardFace
+                key={card.instanceId}
+                definition={card.definition}
+                onClick={() => onSignature(card.instanceId)}
+                disabled={busy}
+                compact
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
     </Panel>
   );
 }
@@ -112,6 +142,7 @@ export function ShopPanel({
   busy,
   onBuy,
   onRemove,
+  onEvolve,
   onLeave,
 }: {
   pending: Extract<PendingNode, { kind: "shop" }>;
@@ -119,9 +150,21 @@ export function ShopPanel({
   busy: boolean;
   onBuy: (kind: "card" | "relic", id: string) => void;
   onRemove: (instanceId: string) => void;
+  onEvolve: (relicId: string) => void;
   onLeave: () => void;
 }) {
   const removeTarget = pending.removalCost;
+  const path = getRiftPath(run.path);
+  const discount = Math.min(
+    0.5,
+    path.shopDiscount +
+      run.relics.reduce(
+        (sum, id) => sum + (getRelic(id)?.effect.shopDiscount ?? 0),
+        0,
+      ),
+  );
+  const evolveCost = Math.round(100 * (1 - discount));
+  const evolvable = run.relics.filter((id) => !isEvolvedRelic(id));
   return (
     <Panel>
       <SectionTitle hint={`${run.runGold} gold`}>Rift market</SectionTitle>
@@ -179,6 +222,30 @@ export function ShopPanel({
           Leave
         </Button>
       </div>
+      {evolvable.length > 0 ? (
+        <div className="mt-3 rounded-xl border border-gold/30 bg-gold/5 p-3">
+          <div className="text-[10px] uppercase tracking-[0.14em] text-gold">
+            Signature relic forge · {evolveCost}g
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {evolvable.map((id) => {
+              const relic = getRelic(id);
+              return relic ? (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => onEvolve(id)}
+                  disabled={busy || run.runGold < evolveCost}
+                  className="rounded-full border border-gold/30 bg-black/20 px-2 py-1 text-[9px] text-gold transition hover:border-gold/70 disabled:opacity-40"
+                  title={relic.description}
+                >
+                  {relic.name} +
+                </button>
+              ) : null;
+            })}
+          </div>
+        </div>
+      ) : null}
     </Panel>
   );
 }

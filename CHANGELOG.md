@@ -13,7 +13,10 @@ pre-1.0 and the format follows [Keep a Changelog](https://keepachangelog.com/).
   card quests, leaderboard, codex, `/cards` hub and full-screen card battle UI.
 - Rift Deck uses all 64 curated skills as cards plus 16 original neutral cards, 18 relics,
   12 normal/6 elite encounter kits and 3 bosses; no new art assets.
-- Migration `0009_card_crusade`; `FEATURE_CARDS`; Team/Ranch entry points and `More` link.
+- Rift Deck advanced upgrades: A0–A5 Ascension with score scaling, Signature card fusion,
+  evolved `+` relics, five Rift Paths and five permanent Rift Edicts purchased with essence.
+  Adds migration `0010_rift_upgrades`, edict purchase API, path/ascension run selectors and
+  run HUD/rest/shop controls.
 - Installable PWA built with Serwist + `@serwist/turbopack`: web app manifest, 192/512/
   maskable icons, Apple touch icon, precached app shell and an offline fallback page.
 - Service-worker caching policy: RO sprites, skill icons and maps are cache-first; all

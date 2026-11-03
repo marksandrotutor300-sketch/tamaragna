@@ -2,16 +2,20 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, BookOpen, Layers, Play, Swords, Trophy } from "lucide-react";
+import { useState } from "react";
+import { ArrowRight, BookOpen, Layers, Play, Sparkles, Swords, Trophy } from "lucide-react";
 import { Button, EmptyState, Panel, SectionTitle, Spinner } from "@/components/ui/primitives";
 import { CardFace } from "@/components/cards/CardFace";
-import { useCardHub, useStartCardRun } from "@/hooks/useCards";
+import { useCardHub, usePurchaseEdict, useStartCardRun } from "@/hooks/useCards";
 import { cn } from "@/lib/client/cn";
 
 export default function CardsPage() {
   const router = useRouter();
   const { data, isLoading } = useCardHub();
   const start = useStartCardRun();
+  const purchase = usePurchaseEdict();
+  const [ascension, setAscension] = useState(0);
+  const [pathId, setPathId] = useState("balanced");
 
   if (isLoading || !data) {
     return (
@@ -79,16 +83,51 @@ export default function CardsPage() {
                   </div>
                 </div>
                 {data.canStart ? (
-                  <Button
-                    className="mt-3 w-full"
-                    onClick={() => start.mutate(undefined, {
-                      onSuccess: (response) => router.push(`/cards/run/${response.run.id}`),
-                    })}
-                    disabled={start.isPending}
-                  >
-                    <Play className="h-4 w-4" />
-                    {start.isPending ? "Opening the rift…" : "Start a three-act run"}
-                  </Button>
+                  <>
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <label className="text-[10px] uppercase tracking-[0.12em] text-muted">
+                        Ascension
+                        <select
+                          value={ascension}
+                          onChange={(event) => setAscension(Number(event.target.value))}
+                          className="mt-1 w-full rounded-lg border border-line/60 bg-panel-2/70 px-2 py-1.5 text-xs text-ink"
+                        >
+                          {Array.from({ length: data.maxAscension + 1 }, (_, level) => (
+                            <option key={level} value={level}>
+                              A{level}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="text-[10px] uppercase tracking-[0.12em] text-muted">
+                        Rift Path
+                        <select
+                          value={pathId}
+                          onChange={(event) => setPathId(event.target.value)}
+                          className="mt-1 w-full rounded-lg border border-line/60 bg-panel-2/70 px-2 py-1.5 text-xs text-ink"
+                        >
+                          {data.paths.map((path) => (
+                            <option key={path.id} value={path.id}>
+                              {path.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    <p className="mt-1 text-[9px] text-muted">
+                      {data.paths.find((path) => path.id === pathId)?.description}
+                    </p>
+                    <Button
+                      className="mt-3 w-full"
+                      onClick={() => start.mutate({ ascension, path: pathId }, {
+                        onSuccess: (response) => router.push(`/cards/run/${response.run.id}`),
+                      })}
+                      disabled={start.isPending}
+                    >
+                      <Play className="h-4 w-4" />
+                      {start.isPending ? "Opening the rift…" : "Start a three-act run"}
+                    </Button>
+                  </>
                 ) : (
                   <Link href="/team">
                     <Button className="mt-3 w-full" variant="ghost">
@@ -160,6 +199,48 @@ export default function CardsPage() {
           </div>
         </Panel>
       ) : null}
+
+      <Panel>
+        <SectionTitle hint={`${data.riftEssence} essence · ${data.wins} clears`}>
+          Rift Edicts
+        </SectionTitle>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {data.edictDefinitions.map((edict) => {
+            const owned = data.edicts.includes(edict.id);
+            const affordable = data.riftEssence >= edict.cost;
+            return (
+              <button
+                key={edict.id}
+                type="button"
+                onClick={() => purchase.mutate(edict.id)}
+                disabled={owned || !affordable || purchase.isPending}
+                className={cn(
+                  "flex items-start gap-3 rounded-xl border p-3 text-left transition",
+                  owned
+                    ? "border-teal/40 bg-teal/5"
+                    : "border-violet/25 bg-violet/5 hover:border-violet/60 disabled:opacity-50",
+                )}
+              >
+                <Sparkles className={cn("mt-0.5 h-4 w-4", owned ? "text-teal" : "text-violet")} />
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="text-xs">{edict.name}</span>
+                    <span className={cn("text-[9px]", owned ? "text-teal" : "text-gold")}>
+                      {owned ? "owned" : `${edict.cost} essence`}
+                    </span>
+                  </span>
+                  <span className="mt-0.5 block text-[10px] leading-relaxed text-muted">
+                    {edict.description}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        {purchase.isError ? (
+          <p className="mt-2 text-[10px] text-rose">{(purchase.error as Error).message}</p>
+        ) : null}
+      </Panel>
 
       <Panel>
         <SectionTitle hint="this season">Rift leaderboard</SectionTitle>

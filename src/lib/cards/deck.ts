@@ -42,6 +42,17 @@ export function upgradeInstance(deck: CardDeck, instanceId: string): CardDeck {
   };
 }
 
+export function signatureInstance(deck: CardDeck, instanceId: string): CardDeck {
+  return {
+    ...deck,
+    cards: deck.cards.map((card) =>
+      card.instanceId === instanceId
+        ? { ...card, upgraded: true, signature: true }
+        : card,
+    ),
+  };
+}
+
 export function shuffle<T>(items: T[], rng: Rng): T[] {
   const result = [...items];
   for (let index = result.length - 1; index > 0; index -= 1) {

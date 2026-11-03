@@ -472,6 +472,19 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX IF NOT EXISTS card_battles_owner_idx ON card_battles (owner_id, created_at);
     `,
   },
+  {
+    version: "0010_rift_upgrades",
+    name: "ascension, rift paths, signatures, evolved relics and edicts",
+    sql: `
+      ALTER TABLE profiles ADD COLUMN IF NOT EXISTS rift_essence integer NOT NULL DEFAULT 0;
+      ALTER TABLE profiles ADD COLUMN IF NOT EXISTS rift_edicts jsonb NOT NULL DEFAULT '[]'::jsonb;
+
+      ALTER TABLE card_runs ADD COLUMN IF NOT EXISTS ascension smallint NOT NULL DEFAULT 0;
+      ALTER TABLE card_runs ADD COLUMN IF NOT EXISTS path text NOT NULL DEFAULT 'balanced';
+      ALTER TABLE card_runs ADD COLUMN IF NOT EXISTS edicts jsonb NOT NULL DEFAULT '[]'::jsonb;
+      ALTER TABLE card_runs ADD COLUMN IF NOT EXISTS reward_essence integer NOT NULL DEFAULT 0;
+    `,
+  },
 ];
 
 function splitStatements(source: string): string[] {

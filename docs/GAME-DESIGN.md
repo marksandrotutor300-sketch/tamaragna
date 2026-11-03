@@ -578,3 +578,5 @@ A turn-based card roguelike side mode, separate from the ATB battle engine.
   40 EXP; abandon pays nothing. UTC daily cap 1,350 coins / 24 materials / 1 egg.
 - **Content limits.** PvE only at launch; no persistent card collection; existing sprites and
   skill icons only. Full rules and API are in [RIFT-DECK.md](RIFT-DECK.md).
+- **Advanced upgrades.** Ascension A1–A5, Signature card fusion, evolved `+` relics, five
+  Rift Paths and five permanent Rift Edicts bought with run-earned essence.

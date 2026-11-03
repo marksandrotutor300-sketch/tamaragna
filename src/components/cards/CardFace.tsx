@@ -29,6 +29,7 @@ export function CardFace({
 }) {
   const element = (definition.element ?? championElement) as 0;
   const color = elementColor(element);
+  const signature = definition.name.endsWith("++");
   return (
     <button
       type="button"
@@ -91,8 +92,15 @@ export function CardFace({
       ) : null}
       <div className="absolute inset-x-2 bottom-1.5 flex items-center justify-between text-[8px] text-muted">
         <span style={{ color }}>{elementName(element)}</span>
-        <span className="uppercase tracking-[0.12em]">{definition.rarity}</span>
+        <span className="uppercase tracking-[0.12em]">
+          {signature ? "signature" : definition.rarity}
+        </span>
       </div>
+      {signature ? (
+        <span className="absolute right-1.5 top-7 rounded-full border border-gold/50 bg-gold/15 px-1.5 py-0.5 text-[7px] uppercase tracking-[0.12em] text-gold">
+          sig
+        </span>
+      ) : null}
     </button>
   );
 }

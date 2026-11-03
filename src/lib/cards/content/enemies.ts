@@ -82,7 +82,10 @@ export function buildEncounter(
   act: number,
   kind: EncounterKind,
   floor: number,
+  mods: { hpMultiplier?: number; damageMultiplier?: number } = {},
 ): CardEnemy[] {
+  const hpMultiplier = mods.hpMultiplier ?? 1;
+  const damageMultiplier = mods.damageMultiplier ?? 1;
   const rng = new Rng(`encounter:${seed}:${act}:${kind}:${floor}`);
   const boss = kind === "boss" ? BOSSES[act - 1] ?? BOSSES[2] : null;
   const count = kind === "boss" ? 1 : kind === "elite" ? rng.int(1, 2) : rng.int(1, 2);
@@ -100,7 +103,7 @@ export function buildEncounter(
       rarity,
       rng,
       statMultiplier: 1 + 0.12 * (act - 1) + (kind === "elite" ? 0.1 : 0),
-      hpMultiplier: 1 + 0.2 * (act - 1) + (kind === "elite" ? 0.2 : 0),
+      hpMultiplier: (1 + 0.2 * (act - 1) + (kind === "elite" ? 0.2 : 0)) * hpMultiplier,
       nature: "hardy",
       ivs: zeroIvs(),
     });
@@ -113,7 +116,11 @@ export function buildEncounter(
             ? ENCOUNTERS[((act - 1) * 4 + (floor % 4)) % ENCOUNTERS.length]
             : species.name;
 
-    const moves = movesFor(act, kind, element);
+    const moves = movesFor(act, kind, element).map((move) =>
+      move.kind === "attack"
+        ? { ...move, power: Math.round(move.power * damageMultiplier) }
+        : move,
+    );
     enemies.push({
       id: `e${index + 1}`,
       name,

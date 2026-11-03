@@ -8,7 +8,7 @@ import { cardError } from "@/lib/cards/http";
 export const runtime = "nodejs";
 
 const schema = z.object({
-  choice: z.enum(["heal", "upgrade"]),
+  choice: z.enum(["heal", "upgrade", "signature"]),
   instanceId: z.string().min(1).max(120).optional(),
 });
 

@@ -286,6 +286,9 @@ A three-act Rift Deck run. One active row per profile via the partial unique ind
 | `relics` | jsonb | string ids |
 | `champions` | jsonb | pet snapshots with run HP/block/cards |
 | `run_gold` | integer | run-local currency |
+| `ascension` | smallint | A0–A5 difficulty |
+| `path` | text | Rift Path id |
+| `edicts` | jsonb | snapshotted Rift Edict ids |
 | `pending` | jsonb | reward/rest/shop/event interaction |
 | `score`, `elapsed_ms`, `season` | numeric | leaderboard and season |
 | `completed_node_ids` | jsonb | cleared rooms |
@@ -513,14 +516,15 @@ All routes are Node runtime and validate input with Zod. Errors return
 | `GET/POST` | `/api/dojo/ghosts`, `/api/dojo/ghosts/:id/spar` | Train/list/spar ghosts |
 | `POST` | `/api/dev/boost` | Admin-token seed helper (level/star/species/coins/eggs/materials) |
 | `GET` | `/api/cards` | Rift Deck hub, active run and leaderboard |
-| `POST` | `/api/cards/runs` | Start/resume a three-act run |
+| `POST` | `/api/cards/runs` | Start/resume a three-act run with `{ ascension?, path? }` |
 | `GET` | `/api/cards/runs/:id` | Run map, deck, relics, champions and pending node |
 | `POST` | `/api/cards/runs/:id/enter` | Enter a reachable node |
 | `POST` | `/api/cards/runs/:id/reward` | Claim a card/relic/skip reward |
-| `POST` | `/api/cards/runs/:id/rest` | Heal or upgrade a card |
-| `POST` | `/api/cards/runs/:id/shop` | Buy, remove or leave |
+| `POST` | `/api/cards/runs/:id/rest` | Heal, upgrade or forge a Signature |
+| `POST` | `/api/cards/runs/:id/shop` | Buy, remove, evolve a relic or leave |
 | `POST` | `/api/cards/runs/:id/event` | Resolve an event choice |
 | `POST` | `/api/cards/runs/:id/abandon` | End the run without main rewards |
+| `POST` | `/api/cards/edicts` | Buy a permanent Rift Edict with essence |
 | `GET` | `/api/cards/leaderboard` | Won-run leaderboard |
 | `GET` | `/api/cards/battles/:id` | Current server battle state |
 | `POST` | `/api/cards/battles/:id/action` | Play a card or end turn (versioned) |
@@ -926,7 +930,7 @@ trade-off is that a tab holding old chunks can need one reload.
 
 ### 16.8 Verification
 
-- Vitest: 98 tests across the engine, genetics, sharing, telemetry, evolution, mastery, live
+- Vitest: 105 tests across the engine, genetics, sharing, telemetry, evolution, mastery, live
   tickets, expeditions, habitats, legacy, stat overrides and the CSRF origin guard.
 - Playwright: 7 flows, including all seven new hub pages.
 - Fresh-database HTTP verification exercised every new flow: guild/raid, market sale, habitat

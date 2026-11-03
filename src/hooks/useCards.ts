@@ -7,6 +7,8 @@ import type {
   CardBattleView,
   CardRunView,
 } from "@/lib/cards/types";
+import type { EdictDefinition } from "@/lib/cards/content/edicts";
+import type { RiftPathDefinition } from "@/lib/cards/content/paths";
 
 export type CardLeaderboardEntry = {
   rank: number;
@@ -22,6 +24,12 @@ export type CardHub = {
   best: CardRunView | null;
   teamSize: number;
   canStart: boolean;
+  wins: number;
+  maxAscension: number;
+  riftEssence: number;
+  edicts: string[];
+  edictDefinitions: EdictDefinition[];
+  paths: RiftPathDefinition[];
   leaderboard: CardLeaderboardEntry[];
 };
 
@@ -61,7 +69,8 @@ function useCardInvalidation() {
 export function useStartCardRun() {
   const invalidate = useCardInvalidation();
   return useMutation({
-    mutationFn: () => api.post<{ run: CardRunView }>("/api/cards/runs"),
+    mutationFn: (input?: { ascension?: number; path?: string }) =>
+      api.post<{ run: CardRunView }>("/api/cards/runs", input ?? {}),
     onSuccess: invalidate,
   });
 }
@@ -107,7 +116,7 @@ export function useClaimCardReward(runId: string) {
 export function useRestCardRun(runId: string) {
   const invalidate = useCardInvalidation();
   return useMutation({
-    mutationFn: (body: { choice: "heal" | "upgrade"; instanceId?: string }) =>
+    mutationFn: (body: { choice: "heal" | "upgrade" | "signature"; instanceId?: string }) =>
       api.post<{ run: CardRunView }>(`/api/cards/runs/${runId}/rest`, body),
     onSuccess: invalidate,
   });
@@ -120,8 +129,18 @@ export function useShopCardRun(runId: string) {
       body:
         | { action: "leave" }
         | { action: "buy"; kind: "card" | "relic"; id: string }
-        | { action: "remove"; instanceId: string },
+        | { action: "remove"; instanceId: string }
+        | { action: "evolve"; relicId: string },
     ) => api.post<{ run: CardRunView }>(`/api/cards/runs/${runId}/shop`, body),
+    onSuccess: invalidate,
+  });
+}
+
+export function usePurchaseEdict() {
+  const invalidate = useCardInvalidation();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api.post<{ essence: number; edicts: string[] }>("/api/cards/edicts", { id }),
     onSuccess: invalidate,
   });
 }

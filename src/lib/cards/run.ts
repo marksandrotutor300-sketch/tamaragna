@@ -16,24 +16,28 @@ import { availableNodes, generateRunMap, nodeById, runActName } from "./map";
 
 export const MAX_DECK_SIZE = 40;
 const ALL_ELEMENTS: ElementId[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-export const CARD_RUN_WIN_REWARD = { coins: 450, materials: 8, eggs: 1, xp: 120 };
-export const CARD_RUN_LOSS_REWARD = { coins: 120, materials: 3, eggs: 0, xp: 40 };
+export const CARD_RUN_WIN_REWARD = { coins: 450, materials: 8, eggs: 1, xp: 120, essence: 2 };
+export const CARD_RUN_LOSS_REWARD = { coins: 120, materials: 3, eggs: 0, xp: 40, essence: 1 };
 export const CARD_DAILY_CAP = { coins: 1_350, materials: 24, eggs: 1 };
 
-export function createChampions(combatants: CombatantInit[]): CardChampion[] {
+export function createChampions(
+  combatants: CombatantInit[],
+  hpMultiplier = 1,
+): CardChampion[] {
   return combatants.map((combatant) => {
     const cards = combatant.skills
       .map((skill) => `skill:${skill.id}`)
       .filter((id) => Boolean(getCard(id)));
+    const maxHp = Math.max(1, Math.round(combatant.stats.hpMax * hpMultiplier));
     return {
       petId: combatant.petId,
       name: combatant.name,
       speciesId: combatant.speciesId,
       element: combatant.element,
       elementLevel: combatant.elementLevel,
-      stats: combatant.stats,
-      maxHp: combatant.stats.hpMax,
-      hp: combatant.stats.hpMax,
+      stats: { ...combatant.stats, hpMax: maxHp },
+      maxHp,
+      hp: maxHp,
       block: 0,
       statuses: [],
       cards: cards.length ? cards : ["neutral:jab", "neutral:guard", "neutral:jab", "neutral:guard"],
@@ -65,14 +69,16 @@ export function rewardForNode(
   node: CardNode,
   deckSize: number,
   relics: string[],
+  options: { cardCount?: number } = {},
 ): PendingNode | null {
+  const requestedCards = options.cardCount ?? 3;
   if (node.type === "treasure") {
     const relic = rollRelic(seed, act, relics);
     const cards = rollCardOptions({
       seed: `${seed}:treasure:${node.id}`,
       act,
       elements: ALL_ELEMENTS,
-      count: 3,
+      count: requestedCards,
     }).map(toCardOption);
     return {
       kind: "reward",
@@ -83,7 +89,7 @@ export function rewardForNode(
   }
   if (node.type === "battle" || node.type === "elite" || node.type === "boss") {
     const elements = ALL_ELEMENTS;
-    const cardCount = node.type === "boss" ? 3 : 3;
+    const cardCount = requestedCards;
     const cards =
       deckSize >= MAX_DECK_SIZE
         ? []
@@ -173,6 +179,10 @@ export function createRun(params: {
   champions: CardChampion[];
   season: number;
   startedAt?: string;
+  ascension?: number;
+  path?: string;
+  edicts?: string[];
+  startGold?: number;
 }): CardRunData {
   const map = generateRunMap(params.seed);
   return {
@@ -186,7 +196,10 @@ export function createRun(params: {
     deck: starterDeck(params.champions),
     relics: [],
     champions: params.champions,
-    runGold: 0,
+    runGold: params.startGold ?? 0,
+    ascension: params.ascension ?? 0,
+    path: params.path ?? "balanced",
+    edicts: params.edicts ?? [],
     pending: null,
     score: 0,
     elapsedMs: 0,
@@ -194,6 +207,7 @@ export function createRun(params: {
     startedAt: params.startedAt ?? new Date().toISOString(),
     endedAt: null,
     completedNodeIds: [],
+    rewardEssence: 0,
   };
 }
 
@@ -253,7 +267,15 @@ export function lossRun(run: CardRunData): CardRunData {
 export function rewardSummary(run: CardRunData) {
   if (run.status === "won") return CARD_RUN_WIN_REWARD;
   if (run.status === "lost") return CARD_RUN_LOSS_REWARD;
-  return { coins: 0, materials: 0, eggs: 0, xp: 0 };
+  return { coins: 0, materials: 0, eggs: 0, xp: 0, essence: 0 };
+}
+
+export function ascensionScoreMultiplier(ascension: number): number {
+  return 1 + Math.max(0, Math.min(5, ascension)) * 0.1;
+}
+
+export function applyScoreMultiplier(score: number, ascension: number, pathMultiplier: number): number {
+  return Math.round(score * ascensionScoreMultiplier(ascension) * pathMultiplier);
 }
 
 export function nextNode(run: CardRunData): CardNode | null {

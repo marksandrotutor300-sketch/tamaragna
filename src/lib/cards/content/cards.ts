@@ -59,10 +59,34 @@ export function upgradedCard(card: CardDefinition): CardDefinition {
   return upgraded;
 }
 
-export function cardForInstance(cardId: string, upgraded: boolean): CardDefinition | undefined {
+export function cardForInstance(
+  cardId: string,
+  upgraded: boolean,
+  signature = false,
+): CardDefinition | undefined {
   const base = getCard(cardId);
   if (!base) return undefined;
+  if (signature) return signatureCard(base);
   return upgraded ? upgradedCard(base) : base;
+}
+
+export function signatureCard(card: CardDefinition): CardDefinition {
+  const first = upgradedCard(card);
+  const id = `${first.id}+`;
+  const cached = CARD_CACHE.get(id);
+  if (cached) return cached;
+
+  const signature: CardDefinition = {
+    ...first,
+    id,
+    name: `${card.name}++`,
+    description: `${card.description} · signature`,
+    cost: Math.max(0, first.cost - 1),
+    effects: first.effects.map(upgradeEffect),
+    upgradedFrom: first.id,
+  };
+  CARD_CACHE.set(id, signature);
+  return signature;
 }
 
 const RARITY_WEIGHTS: Record<CardRarity, number> = {

@@ -130,9 +130,61 @@ export const RELICS: RelicDefinition[] = [
 ];
 
 const BY_ID = new Map(RELICS.map((relic) => [relic.id, relic]));
+const EVOLVED_CACHE = new Map<string, RelicDefinition>();
+
+function evolveEffect(effect: RelicDefinition["effect"]): RelicDefinition["effect"] {
+  return {
+    ...effect,
+    startBlock: effect.startBlock ? effect.startBlock * 2 : undefined,
+    startEnergy: effect.startEnergy ? effect.startEnergy + 1 : undefined,
+    startDraw: effect.startDraw ? effect.startDraw + 1 : undefined,
+    firstAttackBonus: effect.firstAttackBonus ? effect.firstAttackBonus * 2 : undefined,
+    turnBlock: effect.turnBlock ? effect.turnBlock * 2 : undefined,
+    drawPerTurn: effect.drawPerTurn ? effect.drawPerTurn + 1 : undefined,
+    energyPerTurn: effect.energyPerTurn ? effect.energyPerTurn + 1 : undefined,
+    elementBonus: effect.elementBonus
+      ? Object.fromEntries(
+          Object.entries(effect.elementBonus).map(([element, value]) => [
+            element,
+            Number(value) * 1.25,
+          ]),
+        )
+      : undefined,
+    poisonBonus: effect.poisonBonus ? effect.poisonBonus * 2 : undefined,
+    healAfterBattle: effect.healAfterBattle ? effect.healAfterBattle * 2 : undefined,
+    shopDiscount: effect.shopDiscount ? effect.shopDiscount + 0.1 : undefined,
+    restHealBonus: effect.restHealBonus ? effect.restHealBonus + 0.1 : undefined,
+    maxHpBonus: effect.maxHpBonus ? effect.maxHpBonus + 0.1 : undefined,
+    goldBonus: effect.goldBonus ? effect.goldBonus + 0.2 : undefined,
+  };
+}
 
 export function getRelic(id: string): RelicDefinition | undefined {
+  if (id.endsWith("+")) {
+    const base = BY_ID.get(id.slice(0, -1));
+    if (!base) return undefined;
+    const cached = EVOLVED_CACHE.get(id);
+    if (cached) return cached;
+    const evolved: RelicDefinition = {
+      ...base,
+      id,
+      name: `${base.name}+`,
+      description: `${base.description} Evolved.`,
+      rarity: "epic",
+      effect: evolveEffect(base.effect),
+    };
+    EVOLVED_CACHE.set(id, evolved);
+    return evolved;
+  }
   return BY_ID.get(id);
+}
+
+export function isEvolvedRelic(id: string): boolean {
+  return id.endsWith("+");
+}
+
+export function evolveRelicId(id: string): string {
+  return id.endsWith("+") ? id : `${id}+`;
 }
 
 export function allRelics(): RelicDefinition[] {

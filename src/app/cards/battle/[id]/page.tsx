@@ -9,6 +9,7 @@ import { PetSprite } from "@/components/pet/PetSprite";
 import { CardFace } from "@/components/cards/CardFace";
 import { useCardAction, useCardBattle } from "@/hooks/useCards";
 import { cardForInstance } from "@/lib/cards/content/cards";
+import { getEdict } from "@/lib/cards/content/edicts";
 import { elementColor, elementName } from "@/lib/game/elements";
 import { cn } from "@/lib/client/cn";
 import type { CardBattleState, CardChampion, CardDefinition, CardEnemy } from "@/lib/cards/types";
@@ -31,7 +32,7 @@ export default function CardBattlePage() {
 
   const state = battle.state;
   const selected = state.hand.find((card) => card.instanceId === selectedId);
-  const selectedCard = selected ? cardForInstance(selected.cardId, selected.upgraded) : undefined;
+  const selectedCard = selected ? cardForInstance(selected.cardId, selected.upgraded, selected.signature) : undefined;
   const targetMode: "enemy" | "ally" | null =
     selectedCard?.target === "enemy" || selectedCard?.target === "randomEnemy"
       ? "enemy"
@@ -53,7 +54,7 @@ export default function CardBattlePage() {
   const chooseCard = (instanceId: string) => {
     const instance = state.hand.find((card) => card.instanceId === instanceId);
     if (!instance) return;
-    const definition = cardForInstance(instance.cardId, instance.upgraded);
+    const definition = cardForInstance(instance.cardId, instance.upgraded, instance.signature);
     if (!definition) return;
     const owner = state.champions.find((champion) => champion.petId === instance.ownerPetId);
     if (!owner || owner.hp <= 0) return;
@@ -210,7 +211,7 @@ export default function CardBattlePage() {
             </div>
             <div className="mt-2 flex gap-2 overflow-x-auto pb-2">
               {state.hand.map((instance) => {
-                const definition = cardForInstance(instance.cardId, instance.upgraded);
+                const definition = cardForInstance(instance.cardId, instance.upgraded, instance.signature);
                 if (!definition) return null;
                 const owner = state.champions.find(
                   (champion) => champion.petId === instance.ownerPetId,
@@ -261,6 +262,27 @@ export default function CardBattlePage() {
         </div>
 
         <div className="space-y-3">
+          <Panel>
+            <div className="text-[10px] uppercase tracking-[0.16em] text-muted">Edicts</div>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {state.edicts.length > 0 ? (
+                state.edicts.map((id) => {
+                  const edict = getEdict(id);
+                  return edict ? (
+                    <span
+                      key={id}
+                      title={edict.description}
+                      className="rounded-full border border-violet/30 bg-violet/10 px-2 py-0.5 text-[9px] text-violet"
+                    >
+                      {edict.name}
+                    </span>
+                  ) : null;
+                })
+              ) : (
+                <span className="text-[10px] text-muted">No run edicts.</span>
+              )}
+            </div>
+          </Panel>
           <Panel>
             <div className="text-[10px] uppercase tracking-[0.16em] text-muted">Relics</div>
             <div className="mt-2 flex flex-wrap gap-1">

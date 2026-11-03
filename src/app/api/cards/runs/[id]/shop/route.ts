@@ -15,6 +15,7 @@ const schema = z.discriminatedUnion("action", [
     id: z.string().min(1).max(160),
   }),
   z.object({ action: z.literal("remove"), instanceId: z.string().min(1).max(120) }),
+  z.object({ action: z.literal("evolve"), relicId: z.string().min(1).max(120) }),
 ]);
 
 export async function POST(

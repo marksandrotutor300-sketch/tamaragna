@@ -79,6 +79,7 @@ export type CardInstance = {
   cardId: string;
   ownerPetId: string;
   upgraded: boolean;
+  signature?: boolean;
 };
 
 export type CardDeck = {
@@ -152,8 +153,10 @@ export type CardBattleState = {
   champions: CardChampion[];
   enemies: CardEnemy[];
   relics: string[];
+  edicts: string[];
   events: CardEvent[];
   firstAttackUsed: boolean;
+  secondWindUsed: boolean;
   rngCounter: number;
   result: CardBattleResult | null;
 };
@@ -248,6 +251,9 @@ export type CardRunData = {
   relics: string[];
   champions: CardChampion[];
   runGold: number;
+  ascension: number;
+  path: string;
+  edicts: string[];
   pending: PendingNode | null;
   score: number;
   elapsedMs: number;
@@ -255,6 +261,7 @@ export type CardRunData = {
   startedAt: string;
   endedAt: string | null;
   completedNodeIds: string[];
+  rewardEssence: number;
 };
 
 export type CardRunView = Omit<CardRunData, "seed"> & {

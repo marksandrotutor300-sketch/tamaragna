@@ -118,7 +118,7 @@ function shuffleInPlace<T>(items: T[], rng: Rng): T[] {
 }
 
 function definitionFor(instance: CardInstance): CardDefinition {
-  const definition = cardForInstance(instance.cardId, instance.upgraded);
+  const definition = cardForInstance(instance.cardId, instance.upgraded, instance.signature);
   if (!definition) throw new CardRuleError(`Unknown card ${instance.cardId}`, 500);
   return definition;
 }
@@ -217,8 +217,14 @@ function damageChampion(
   }
   addEvent(state, "damage", `${enemy.name} hits ${champion.name} for ${total}.`, champion.petId, total);
   if (champion.hp <= 0) {
-    addEvent(state, "faint", `${champion.name} falls.`, champion.petId);
-    exhaustChampionCards(state, champion.petId);
+    if (state.edicts.includes("second-wind") && !state.secondWindUsed) {
+      champion.hp = Math.max(1, Math.floor(champion.maxHp * 0.25));
+      state.secondWindUsed = true;
+      addEvent(state, "revive", `${champion.name} is revived by Second Wind.`, champion.petId);
+    } else {
+      addEvent(state, "faint", `${champion.name} falls.`, champion.petId);
+      exhaustChampionCards(state, champion.petId);
+    }
   }
   return total;
 }
@@ -482,6 +488,7 @@ function startPlayerTurn(state: CardBattleState): void {
   const drawCount =
     5 +
     (firstTurn ? state.relics.reduce((sum, id) => sum + (getRelic(id)?.effect.startDraw ?? 0), 0) : 0) +
+    (firstTurn && state.edicts.includes("open-hand") ? 1 : 0) +
     state.relics.reduce((sum, id) => sum + (getRelic(id)?.effect.drawPerTurn ?? 0), 0);
   drawCards(state, drawCount);
   addEvent(state, "turn", `Turn ${state.turn}.`);
@@ -515,6 +522,7 @@ export function createCardBattle(params: {
   enemies: CardEnemy[];
   deck: CardInstance[];
   relics: string[];
+  edicts?: string[];
 }): CardBattleState {
   const rng = new Rng(`battle:${params.seed}:running`);
   const shuffled = shuffleInPlace([...params.deck], rng);
@@ -544,8 +552,10 @@ export function createCardBattle(params: {
     champions,
     enemies,
     relics: [...params.relics],
+    edicts: [...(params.edicts ?? [])],
     events: [],
     firstAttackUsed: false,
+    secondWindUsed: false,
     rngCounter: 0,
     result: null,
   };
