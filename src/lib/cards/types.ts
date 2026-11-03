@@ -2,6 +2,7 @@ import type { ElementId } from "@/lib/game/types";
 import type { CombatStats } from "@/lib/game/stats";
 
 export type CardRarity = "starter" | "common" | "uncommon" | "rare" | "epic";
+export type RelicSetId = "verdant" | "ember" | "tempest" | "veil" | "wanderer";
 export type CardType = "attack" | "skill" | "power";
 export type CardTarget =
   | "enemy"
@@ -74,12 +75,20 @@ export type CardDefinition = {
   upgradedFrom?: string;
 };
 
+export type CardRuneId =
+  | "ember"
+  | "bulwark"
+  | "insight"
+  | "leech"
+  | "flow";
+
 export type CardInstance = {
   instanceId: string;
   cardId: string;
   ownerPetId: string;
   upgraded: boolean;
   signature?: boolean;
+  rune?: CardRuneId;
 };
 
 export type CardDeck = {
@@ -99,6 +108,7 @@ export type CardChampion = {
   block: number;
   statuses: CardStatus[];
   cards: string[];
+  ascended?: boolean;
 };
 
 export type EnemyMove =
@@ -168,6 +178,7 @@ export type CardAction =
 export type CardNodeType =
   | "battle"
   | "elite"
+  | "hunt"
   | "event"
   | "rest"
   | "shop"
@@ -239,6 +250,22 @@ export type PendingNode =
 
 export type CardRunStatus = "active" | "won" | "lost" | "abandoned";
 
+export type CardContractId =
+  | "hunter"
+  | "unbroken"
+  | "elementalist"
+  | "deep-dive"
+  | "boss-slayer";
+
+export type CardContractState = {
+  id: CardContractId;
+  progress: number;
+  completed: boolean;
+  claimed: boolean;
+  failed?: boolean;
+  rewardGold: number;
+};
+
 export type CardRunData = {
   id: string;
   ownerId: string;
@@ -254,6 +281,7 @@ export type CardRunData = {
   ascension: number;
   path: string;
   edicts: string[];
+  contracts: CardContractState[];
   pending: PendingNode | null;
   score: number;
   elapsedMs: number;
@@ -292,6 +320,7 @@ export type RelicDefinition = {
   name: string;
   description: string;
   rarity: CardRarity;
+  set?: RelicSetId;
   effect: RelicEffect;
 };
 

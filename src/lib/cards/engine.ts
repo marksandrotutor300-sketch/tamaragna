@@ -2,6 +2,7 @@ import { Rng } from "@/lib/rng";
 import { checksum } from "@/lib/sim/checksum";
 import { battleElementMultiplier } from "@/lib/game/combat-data";
 import type { CardDefinition, CardEffect, CardStatus, CardStatusKind } from "./types";
+import type { CardRuneId } from "./types";
 import type {
   CardAction,
   CardBattleResult,
@@ -397,6 +398,16 @@ function effectTarget(effect: CardEffect, card: CardDefinition): string | undefi
   return "target" in effect ? effect.target : card.target;
 }
 
+function runeEffect(effect: CardEffect, rune: CardRuneId | undefined): CardEffect {
+  if (rune === "ember" && effect.kind === "damage") {
+    return { ...effect, power: Math.round(effect.power * 1.25) };
+  }
+  if (rune === "bulwark" && effect.kind === "block") {
+    return { ...effect, amount: effect.amount + 4 };
+  }
+  return effect;
+}
+
 function chooseIntent(state: CardBattleState, enemy: CardEnemy): EnemyMove {
   const rng = rngFor(state, `intent:${enemy.id}`);
   return enemy.moves[rng.int(0, enemy.moves.length - 1)] ?? { kind: "attack", power: 80 };
@@ -621,7 +632,13 @@ export function applyCardAction(
   state.energy -= card.cost;
   state.hand.splice(index, 1);
   for (const effect of card.effects) {
-    applyEffect(state, card, instance, effect, champion, action.targetId);
+    applyEffect(state, card, instance, runeEffect(effect, instance.rune), champion, action.targetId);
+  }
+  if (instance.rune === "insight") drawCards(state, 1);
+  if (instance.rune === "flow") state.energy += 1;
+  if (instance.rune === "leech" && card.effects.some((effect) => effect.kind === "damage")) {
+    const healed = healChampion(champion, 2);
+    addEvent(state, "heal", `${champion.name} heals ${healed} from Leech Rune.`, champion.petId, healed);
   }
 
   if (state.enemies.every((enemy) => enemy.hp <= 0)) {

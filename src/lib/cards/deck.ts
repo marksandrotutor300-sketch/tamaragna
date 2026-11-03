@@ -1,5 +1,5 @@
 import type { Rng } from "@/lib/rng";
-import type { CardDeck, CardInstance } from "./types";
+import type { CardDeck, CardInstance, CardRuneId } from "./types";
 
 export function emptyDeck(): CardDeck {
   return { cards: [], nextInstanceId: 1 };
@@ -49,6 +49,19 @@ export function signatureInstance(deck: CardDeck, instanceId: string): CardDeck 
       card.instanceId === instanceId
         ? { ...card, upgraded: true, signature: true }
         : card,
+    ),
+  };
+}
+
+export function inscribeInstance(
+  deck: CardDeck,
+  instanceId: string,
+  rune: CardRuneId,
+): CardDeck {
+  return {
+    ...deck,
+    cards: deck.cards.map((card) =>
+      card.instanceId === instanceId ? { ...card, rune } : card,
     ),
   };
 }

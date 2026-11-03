@@ -103,6 +103,7 @@ CREATE TABLE IF NOT EXISTS card_runs (
   ascension smallint NOT NULL DEFAULT 0,
   path text NOT NULL DEFAULT 'balanced',
   edicts jsonb NOT NULL DEFAULT '[]'::jsonb,
+  contracts jsonb NOT NULL DEFAULT '[]'::jsonb,
   pending jsonb,
   score integer NOT NULL DEFAULT 0,
   elapsed_ms integer NOT NULL DEFAULT 0,
@@ -125,6 +126,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS card_runs_active_idx
 ALTER TABLE card_runs ADD COLUMN IF NOT EXISTS ascension smallint NOT NULL DEFAULT 0;
 ALTER TABLE card_runs ADD COLUMN IF NOT EXISTS path text NOT NULL DEFAULT 'balanced';
 ALTER TABLE card_runs ADD COLUMN IF NOT EXISTS edicts jsonb NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE card_runs ADD COLUMN IF NOT EXISTS contracts jsonb NOT NULL DEFAULT '[]'::jsonb;
 ALTER TABLE card_runs ADD COLUMN IF NOT EXISTS reward_essence integer NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS card_battles (

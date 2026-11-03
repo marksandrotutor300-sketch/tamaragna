@@ -12,6 +12,7 @@ import { addCard, emptyDeck } from "./deck";
 import { getCard, rollCardOptions } from "./content/cards";
 import { getRelic, relicPoolForAct } from "./content/relics";
 import { getEvent, randomEvent } from "./content/events";
+import { createContracts } from "./content/contracts";
 import { availableNodes, generateRunMap, nodeById, runActName } from "./map";
 
 export const MAX_DECK_SIZE = 40;
@@ -87,7 +88,7 @@ export function rewardForNode(
       relic: relic ? toRelicOption(relic) : undefined,
     };
   }
-  if (node.type === "battle" || node.type === "elite" || node.type === "boss") {
+  if (node.type === "battle" || node.type === "elite" || node.type === "hunt" || node.type === "boss") {
     const elements = ALL_ELEMENTS;
     const cardCount = requestedCards;
     const cards =
@@ -100,7 +101,7 @@ export function rewardForNode(
             count: cardCount,
           }).map(toCardOption);
     const relic =
-      node.type === "elite" || node.type === "boss"
+      node.type === "elite" || node.type === "hunt" || node.type === "boss"
         ? rollRelic(`${seed}:${node.id}`, act, relics)
         : undefined;
     return {
@@ -200,6 +201,7 @@ export function createRun(params: {
     ascension: params.ascension ?? 0,
     path: params.path ?? "balanced",
     edicts: params.edicts ?? [],
+    contracts: createContracts(params.seed),
     pending: null,
     score: 0,
     elapsedMs: 0,

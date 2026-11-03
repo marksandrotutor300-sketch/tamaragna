@@ -115,13 +115,14 @@ The DDL also adds `pets.nature`, `pets.star`, `pets.loadout`, `pets.evolution_st
 `tournaments`, `tournament_entries`, `tournament_matches`, `guilds`, `guild_members`,
 `guild_raids`, `guild_contributions`, `market_listings`, `expeditions`, `ranch_visits`,
 `ranked_cups`, `spectator_picks`, `legacy_marks`, `dojo_ghosts`, `dojo_runs`, `card_runs`,
-`card_battles`, `admin_audit_log` and `admin_role_events`. Migration `0010_rift_upgrades` adds
-the Rift Deck ascension/path/edict fields and profile Rift Essence/edicts.
+`card_battles`, `admin_audit_log` and `admin_role_events`. Migration `0011_rift_contracts`
+adds the Rift Deck contract states; prior `0010_rift_upgrades` adds ascension/path/edicts and
+profile Rift Essence.
 Existing pets default to Hardy, 1★, stage 1 and the first three attacks plus one support; no manual
 migration is needed. New profiles join the highest season in use. `ensure-data` detects stale
 four-skill data and generates the evolution graph when missing.
 
-The current schema version is **`0010_rift_upgrades`**.
+The current schema version is **`0011_rift_contracts`**.
 
 ### Rift Deck controls
 
@@ -129,7 +130,8 @@ The current schema version is **`0010_rift_upgrades`**.
 run per profile. Card battle actions are versioned server transactions, not client-trusted
 state. Main-economy rewards are once-only per run with a UTC daily cap; abandoned runs pay
 nothing. Ascension/path are snapshotted at start. Rift Edicts are purchased permanently with
-Rift Essence and snapshotted into runs. See [RIFT-DECK.md](RIFT-DECK.md).
+Rift Essence and snapshotted into runs. Contracts are generated per run and claimed for run
+gold. See [RIFT-DECK.md](RIFT-DECK.md).
 
 ### Versioned migrations
 

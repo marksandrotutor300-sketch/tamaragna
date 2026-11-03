@@ -8,8 +8,9 @@ import { cardError } from "@/lib/cards/http";
 export const runtime = "nodejs";
 
 const schema = z.object({
-  choice: z.enum(["heal", "upgrade", "signature"]),
+  choice: z.enum(["heal", "upgrade", "signature", "ascend"]),
   instanceId: z.string().min(1).max(120).optional(),
+  petId: z.string().min(1).max(120).optional(),
 });
 
 export async function POST(

@@ -10,6 +10,7 @@ export const ACTS = [
 const NODE_LABEL: Record<CardNodeType, string> = {
   battle: "Skirmish",
   elite: "Elite",
+  hunt: "Hunt",
   event: "Event",
   rest: "Rest",
   shop: "Shop",
@@ -63,6 +64,9 @@ function generateAct(seed: string, act: (typeof ACTS)[number]): CardActMap {
       node.next = next.map((entry) => entry.id);
     }
   }
+
+  const huntFloor = floors[5];
+  if (huntFloor?.[0]) huntFloor[0].type = "hunt";
 
   return {
     act: act.act,

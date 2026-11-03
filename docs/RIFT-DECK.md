@@ -78,6 +78,30 @@ Rift Deck now has five advanced upgrade layers:
 - `POST /api/cards/runs/[id]/shop` accepts `{ action: "evolve", relicId }`.
 - `POST /api/cards/edicts` purchases `{ id }`.
 
+## Second advanced pack
+
+- **Champion Ascension.** Once per run, ascend one living champion at a rest site: +20% HP,
+  ATK and MATK, full heal, and a unique element-group ultimate card.
+- **Card Runes.** Inscribe one of five runes on a card at a shop: Ember (+damage), Bulwark
+  (+block), Insight (+draw), Leech (+heal on damage) and Flow (+energy).
+- **Relic Sets.** Five relic families grant 2-piece and 3-piece bonuses; evolved relics count
+  toward the base set.
+- **Rift Contracts.** Three optional contracts per run, tracked server-side, with run-gold
+  rewards claimed once from the run panel.
+- **Elite Hunts.** One optional Hunt node per act with tougher enemies and a guaranteed relic.
+
+### Persistence
+
+`card_runs.contracts` stores the three contract states. Migration `0011_rift_contracts` is
+additive. Runes, champion ascent and set bonuses live in existing JSON runs.
+
+### APIs
+
+- `POST /api/cards/runs/[id]/rest` accepts `{ choice: "ascend", petId }`.
+- `POST /api/cards/runs/[id]/shop` accepts `{ action: "inscribe", instanceId, runeId }`.
+- `POST /api/cards/runs/[id]/contracts` claims a completed contract.
+- Hunt nodes use the existing enter/battle flow.
+
 ## Server authority
 
 Card mode is PvE only. The server owns the run map, deck, relics, champions and battle state.
@@ -119,7 +143,8 @@ resumes the exact server state.
 ## Feature flag and verification
 
 - `FEATURE_CARDS=0` disables the API with 404.
-- Unit tests: `src/lib/cards/engine.test.ts`, `src/lib/cards/upgrades.test.ts`.
-- End-to-end manual/HTTP flow: start with path/ascension → enter battle → play actions → claim
-  reward → rest/shop/event → boss → act transition → terminal result.
-- Health: `GET /api/health` should report `0010_rift_upgrades`.
+- Unit tests: `src/lib/cards/engine.test.ts`, `src/lib/cards/upgrades.test.ts`,
+  `src/lib/cards/second-upgrades.test.ts`.
+- End-to-end manual/HTTP flow: start with path/ascension → enter battle/hunt → play actions →
+  claim reward/contracts → rest/shop/event → boss → act transition → terminal result.
+- Health: `GET /api/health` should report `0011_rift_contracts`.

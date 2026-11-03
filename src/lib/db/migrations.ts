@@ -485,6 +485,13 @@ export const MIGRATIONS: Migration[] = [
       ALTER TABLE card_runs ADD COLUMN IF NOT EXISTS reward_essence integer NOT NULL DEFAULT 0;
     `,
   },
+  {
+    version: "0011_rift_contracts",
+    name: "rift contracts",
+    sql: `
+      ALTER TABLE card_runs ADD COLUMN IF NOT EXISTS contracts jsonb NOT NULL DEFAULT '[]'::jsonb;
+    `,
+  },
 ];
 
 function splitStatements(source: string): string[] {

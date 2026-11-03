@@ -580,3 +580,5 @@ A turn-based card roguelike side mode, separate from the ATB battle engine.
   skill icons only. Full rules and API are in [RIFT-DECK.md](RIFT-DECK.md).
 - **Advanced upgrades.** Ascension A1–A5, Signature card fusion, evolved `+` relics, five
   Rift Paths and five permanent Rift Edicts bought with run-earned essence.
+- **Second advanced pack.** Champion Ascension and ultimate cards, five card runes, five relic
+  sets with 2/3-piece bonuses, three tracked Rift Contracts, and one Elite Hunt per act.

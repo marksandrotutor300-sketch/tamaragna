@@ -289,6 +289,7 @@ A three-act Rift Deck run. One active row per profile via the partial unique ind
 | `ascension` | smallint | A0–A5 difficulty |
 | `path` | text | Rift Path id |
 | `edicts` | jsonb | snapshotted Rift Edict ids |
+| `contracts` | jsonb | three run contract states |
 | `pending` | jsonb | reward/rest/shop/event interaction |
 | `score`, `elapsed_ms`, `season` | numeric | leaderboard and season |
 | `completed_node_ids` | jsonb | cleared rooms |
@@ -520,8 +521,9 @@ All routes are Node runtime and validate input with Zod. Errors return
 | `GET` | `/api/cards/runs/:id` | Run map, deck, relics, champions and pending node |
 | `POST` | `/api/cards/runs/:id/enter` | Enter a reachable node |
 | `POST` | `/api/cards/runs/:id/reward` | Claim a card/relic/skip reward |
-| `POST` | `/api/cards/runs/:id/rest` | Heal, upgrade or forge a Signature |
-| `POST` | `/api/cards/runs/:id/shop` | Buy, remove, evolve a relic or leave |
+| `POST` | `/api/cards/runs/:id/rest` | Heal, upgrade, forge a Signature or ascend a champion |
+| `POST` | `/api/cards/runs/:id/shop` | Buy, remove, evolve a relic, inscribe a rune or leave |
+| `POST` | `/api/cards/runs/:id/contracts` | Claim a completed Rift Contract |
 | `POST` | `/api/cards/runs/:id/event` | Resolve an event choice |
 | `POST` | `/api/cards/runs/:id/abandon` | End the run without main rewards |
 | `POST` | `/api/cards/edicts` | Buy a permanent Rift Edict with essence |
@@ -930,7 +932,7 @@ trade-off is that a tab holding old chunks can need one reload.
 
 ### 16.8 Verification
 
-- Vitest: 105 tests across the engine, genetics, sharing, telemetry, evolution, mastery, live
+- Vitest: 111 tests across the engine, genetics, sharing, telemetry, evolution, mastery, live
   tickets, expeditions, habitats, legacy, stat overrides and the CSRF origin guard.
 - Playwright: 7 flows, including all seven new hub pages.
 - Fresh-database HTTP verification exercised every new flow: guild/raid, market sale, habitat

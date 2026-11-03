@@ -231,6 +231,7 @@ export default function CardBattlePage() {
                     selected={selectedId === instance.instanceId}
                     disabled={disabled}
                     onClick={() => chooseCard(instance.instanceId)}
+                    rune={instance.rune}
                   />
                 );
               })}

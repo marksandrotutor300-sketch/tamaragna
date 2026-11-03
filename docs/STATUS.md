@@ -39,6 +39,7 @@ it is **not** hardened for adversarial scale — see [Known limitations](#known-
 | Endless Tower | ✅ Done | Scaled waves, MVP every 10, HP carry-over, persisted runs |
 | Rift Deck | ✅ Done | Three-act roguelike card mode, three pet champions, server-authoritative actions, cards/relics, resumable runs, capped rewards, leaderboard, codex |
 | Rift Deck advanced upgrades | ✅ Done | A0–A5 Ascension, Signature card fusion, evolved `+` relics, five Rift Paths, five persistent Rift Edicts |
+| Rift Deck second upgrade pack | ✅ Done | Champion Ascension/ultimates, five card runes, five relic sets, Rift Contracts and Elite Hunts |
 | Tower leaderboard | ✅ Done | Highest wave, time tie-break |
 | Async PvP | ✅ Done | Ghost teams, rating matchmaking, Elo, history |
 | PvP snapshot freshness | ✅ Done | Refreshes on team edits, training, hatching and battle results |
@@ -99,7 +100,7 @@ encountered in the tower.
 | --- | --- |
 | `npx tsc --noEmit` | clean |
 | `npm run lint` | clean |
-| `npx vitest run` | 105/105 passing |
+| `npx vitest run` | 111/111 passing |
 | `npm run data:validate` | all checks passing |
 | `npm run build` | compiled successfully; all static pages generated |
 | PWA worker | `/serwist/sw.js` prerendered at build; 53 precache entries (~1.28 MB) |
@@ -219,7 +220,10 @@ rating moves by the Elo delta, history shows the result, and a duplicate submiss
 
 ### M2–M6 program
 
-- `/api/health` reports `schemaVersion: "0010_rift_upgrades"` on a fresh database.
+- `/api/health` reports `schemaVersion: "0011_rift_contracts"` on a fresh database.
+- Rift Deck second upgrade pack: the run started with three contracts, the map exposed one
+  hunt per act, a hunt battle completed, and the run reached Act 2 with contracts and rewards.
+  Unit coverage exercises contracts, relic sets, hunt generation, ultimates and rune damage.
 - Rift Deck advanced upgrades: start accepted `{ ascension: 0, path: "root" }`, the run
   snapshotted the path/ascension/edicts, the hub exposed five paths and five edicts, and a
   three-act smoke run reached Act 2 with rewards and capped coins. Unit coverage exercises
@@ -506,8 +510,9 @@ covers seven flows, including the new upgrade hub pages (see limitation 52).
 74. **Rift Deck reuses existing art.** Cards use existing pet sprites and RO skill icons with
     CSS frames; there is no authored card art or animation pass.
 75. **Rift Deck advanced upgrades are first-pass.** Ascension, Rift Paths, signature forging,
-    relic evolution and Rift Edicts are verified by unit/HTTP checks, but endgame difficulty,
-    essence pacing and the five paths still need human balance testing.
+    relic evolution, Rift Edicts, Champion Ascension, runes, relic sets, contracts and hunts
+    are verified by unit/HTTP checks, but endgame difficulty, essence pacing and reward
+    balance still need human testing.
 
 ## Next steps
 

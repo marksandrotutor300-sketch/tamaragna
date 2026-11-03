@@ -2,6 +2,7 @@ import { Rng } from "@/lib/rng";
 import type { ElementId } from "@/lib/game/types";
 import { allSkillCards, getSkillCard } from "./skill-cards";
 import { NEUTRAL_CARDS } from "./neutral-cards";
+import { ULTIMATE_CARDS } from "./ultimate-cards";
 import type { CardDefinition, CardEffect, CardRarity } from "../types";
 
 const CARD_CACHE = new Map<string, CardDefinition>();
@@ -9,7 +10,7 @@ let ALL_CACHE: CardDefinition[] | null = null;
 
 export function allCards(): CardDefinition[] {
   if (!ALL_CACHE) {
-    ALL_CACHE = [...allSkillCards(), ...NEUTRAL_CARDS];
+    ALL_CACHE = [...allSkillCards(), ...NEUTRAL_CARDS, ...ULTIMATE_CARDS];
     for (const card of ALL_CACHE) CARD_CACHE.set(card.id, card);
   }
   return ALL_CACHE;
@@ -100,6 +101,7 @@ const RARITY_WEIGHTS: Record<CardRarity, number> = {
 export function cardPoolForAct(act: number, elements: ElementId[]): CardDefinition[] {
   const elementSet = new Set(elements);
   return allCards().filter((card) => {
+    if (card.id.startsWith("ultimate:")) return false;
     if (card.rarity === "starter") return false;
     if (card.element !== null && !elementSet.has(card.element)) return false;
     if (act === 1) return card.rarity === "common" || card.rarity === "uncommon";

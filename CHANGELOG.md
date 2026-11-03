@@ -17,6 +17,9 @@ pre-1.0 and the format follows [Keep a Changelog](https://keepachangelog.com/).
   evolved `+` relics, five Rift Paths and five permanent Rift Edicts purchased with essence.
   Adds migration `0010_rift_upgrades`, edict purchase API, path/ascension run selectors and
   run HUD/rest/shop controls.
+- Rift Deck second advanced pack: Champion Ascension with ultimate cards, five card runes,
+  five relic sets, three tracked Rift Contracts and one Elite Hunt per act. Adds migration
+  `0011_rift_contracts`, contract claim API, rune/contract UI and hunt nodes.
 - Installable PWA built with Serwist + `@serwist/turbopack`: web app manifest, 192/512/
   maskable icons, Apple touch icon, precached app shell and an offline fallback page.
 - Service-worker caching policy: RO sprites, skill icons and maps are cache-first; all

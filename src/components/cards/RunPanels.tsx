@@ -4,8 +4,10 @@ import { ArrowRight, Coins, RotateCcw, Sparkles, Star, Upload } from "lucide-rea
 import { Button, Panel, SectionTitle } from "@/components/ui/primitives";
 import { CardFace } from "@/components/cards/CardFace";
 import { getCard } from "@/lib/cards/content/cards";
-import { getRelic, isEvolvedRelic } from "@/lib/cards/content/relics";
+import { getRelic, isEvolvedRelic, isSetRelic } from "@/lib/cards/content/relics";
+import { allRunes } from "@/lib/cards/content/runes";
 import { getRiftPath } from "@/lib/cards/content/paths";
+import { getContract } from "@/lib/cards/content/contracts";
 import { cn } from "@/lib/client/cn";
 import type { CardRunView, CardRewardOption, PendingNode } from "@/lib/cards/types";
 
@@ -67,13 +69,16 @@ export function RestPanel({
   onHeal,
   onUpgrade,
   onSignature,
+  onAscend,
 }: {
   run: CardRunView;
   busy: boolean;
   onHeal: () => void;
   onUpgrade: (instanceId: string) => void;
   onSignature: (instanceId: string) => void;
+  onAscend: (petId: string) => void;
 }) {
+  const hasAscended = run.champions.some((champion) => champion.ascended);
   const duplicateCards = run.deckCards.filter(
     (card) =>
       !card.signature &&
@@ -97,7 +102,39 @@ export function RestPanel({
         >
           <Upload className="h-3.5 w-3.5" /> Upgrade first unupgraded
         </Button>
+        {!hasAscended ? (
+          <Button
+            size="sm"
+            variant="gold"
+            onClick={() => {
+              const first = run.champions.find((champion) => champion.hp > 0);
+              if (first) onAscend(first.petId);
+            }}
+            disabled={busy || !run.champions.some((champion) => champion.hp > 0)}
+          >
+            <Star className="h-3.5 w-3.5" /> Ascend first champion
+          </Button>
+        ) : null}
       </div>
+      {!hasAscended ? (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {run.champions
+            .filter((champion) => champion.hp > 0)
+            .map((champion) => (
+              <button
+                key={champion.petId}
+                type="button"
+                onClick={() => onAscend(champion.petId)}
+                disabled={busy}
+                className="rounded-lg border border-gold/30 bg-gold/10 px-2 py-1 text-[9px] text-gold disabled:opacity-40"
+              >
+                Ascend {champion.name}
+              </button>
+            ))}
+        </div>
+      ) : (
+        <p className="mt-2 text-[9px] text-gold">A champion has already ascended this run.</p>
+      )}
       <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
         {run.deckCards
           .filter((card) => !card.upgraded && !card.signature)
@@ -143,6 +180,7 @@ export function ShopPanel({
   onBuy,
   onRemove,
   onEvolve,
+  onInscribe,
   onLeave,
 }: {
   pending: Extract<PendingNode, { kind: "shop" }>;
@@ -151,6 +189,7 @@ export function ShopPanel({
   onBuy: (kind: "card" | "relic", id: string) => void;
   onRemove: (instanceId: string) => void;
   onEvolve: (relicId: string) => void;
+  onInscribe: (instanceId: string, runeId: string) => void;
   onLeave: () => void;
 }) {
   const removeTarget = pending.removalCost;
@@ -164,7 +203,7 @@ export function ShopPanel({
       ),
   );
   const evolveCost = Math.round(100 * (1 - discount));
-  const evolvable = run.relics.filter((id) => !isEvolvedRelic(id));
+  const evolvable = run.relics.filter((id) => !isEvolvedRelic(id) && !isSetRelic(id));
   return (
     <Panel>
       <SectionTitle hint={`${run.runGold} gold`}>Rift market</SectionTitle>
@@ -246,6 +285,110 @@ export function ShopPanel({
           </div>
         </div>
       ) : null}
+      <div className="mt-3 rounded-xl border border-violet/30 bg-violet/5 p-3">
+        <div className="text-[10px] uppercase tracking-[0.14em] text-violet">
+          Rune inscriber · 60g
+        </div>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <select
+            id="rune-card"
+            defaultValue=""
+            disabled={busy}
+            className="max-w-44 rounded-lg border border-line/60 bg-panel-2/70 px-2 py-1 text-[10px]"
+          >
+            <option value="">Choose card…</option>
+            {run.deckCards
+              .filter((card) => !card.rune)
+              .map((card) => (
+                <option key={card.instanceId} value={card.instanceId}>
+                  {card.definition.name}
+                </option>
+              ))}
+          </select>
+          <select
+            id="rune-type"
+            defaultValue="ember"
+            disabled={busy}
+            className="max-w-40 rounded-lg border border-line/60 bg-panel-2/70 px-2 py-1 text-[10px]"
+          >
+            {allRunes().map((rune) => (
+              <option key={rune.id} value={rune.id}>
+                {rune.name}
+              </option>
+            ))}
+          </select>
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={busy || run.runGold < 60}
+            onClick={() => {
+              const card = document.querySelector<HTMLSelectElement>("#rune-card");
+              const rune = document.querySelector<HTMLSelectElement>("#rune-type");
+              if (card?.value && rune?.value) onInscribe(card.value, rune.value);
+            }}
+          >
+            Inscribe
+          </Button>
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
+export function ContractsPanel({
+  run,
+  busy,
+  onClaim,
+}: {
+  run: CardRunView;
+  busy: boolean;
+  onClaim: (contractId: string) => void;
+}) {
+  if (!run.contracts.length) return null;
+  return (
+    <Panel>
+      <SectionTitle hint="optional">Rift contracts</SectionTitle>
+      <div className="space-y-2">
+        {run.contracts.map((contract) => {
+          const definition = getContract(contract.id);
+          if (!definition) return null;
+          return (
+            <div
+              key={contract.id}
+              className={cn(
+                "flex items-center gap-3 rounded-xl border px-3 py-2",
+                contract.claimed
+                  ? "border-line/40 bg-black/20 opacity-60"
+                  : contract.completed
+                    ? "border-teal/40 bg-teal/5"
+                    : contract.failed
+                      ? "border-rose/30 bg-rose/5"
+                      : "border-line/60 bg-black/20",
+              )}
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs">{definition.name}</span>
+                  <span className="text-[9px] text-gold">+{contract.rewardGold}g</span>
+                </div>
+                <div className="text-[10px] text-muted">{definition.description}</div>
+                <div className="mt-1 text-[9px] text-muted">
+                  {contract.failed
+                    ? "failed"
+                    : `${Math.min(contract.progress, definition.target)}/${definition.target}`}
+                </div>
+              </div>
+              {contract.completed && !contract.claimed ? (
+                <Button size="sm" variant="gold" onClick={() => onClaim(contract.id)} disabled={busy}>
+                  Claim
+                </Button>
+              ) : contract.claimed ? (
+                <span className="text-[9px] text-teal">claimed</span>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
     </Panel>
   );
 }

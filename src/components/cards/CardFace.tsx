@@ -3,6 +3,8 @@
 import { cn } from "@/lib/client/cn";
 import { elementColor, elementName } from "@/lib/game/elements";
 import type { CardDefinition } from "@/lib/cards/types";
+import type { CardRuneId } from "@/lib/cards/types";
+import { getRune } from "@/lib/cards/content/runes";
 
 const RARITY: Record<string, string> = {
   starter: "border-line/80",
@@ -19,6 +21,7 @@ export function CardFace({
   disabled = false,
   onClick,
   compact = false,
+  rune,
 }: {
   definition: CardDefinition;
   championElement?: number;
@@ -26,6 +29,7 @@ export function CardFace({
   disabled?: boolean;
   onClick?: () => void;
   compact?: boolean;
+  rune?: CardRuneId;
 }) {
   const element = (definition.element ?? championElement) as 0;
   const color = elementColor(element);
@@ -99,6 +103,14 @@ export function CardFace({
       {signature ? (
         <span className="absolute right-1.5 top-7 rounded-full border border-gold/50 bg-gold/15 px-1.5 py-0.5 text-[7px] uppercase tracking-[0.12em] text-gold">
           sig
+        </span>
+      ) : null}
+      {rune ? (
+        <span
+          title={getRune(rune)?.description}
+          className="absolute left-1.5 top-7 rounded-full border border-violet/50 bg-violet/15 px-1.5 py-0.5 text-[7px] uppercase tracking-[0.12em] text-violet"
+        >
+          {rune}
         </span>
       ) : null}
     </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { BedDouble, Crown, Gift, ShoppingBag, Skull, Sparkles, Swords } from "lucide-react";
+import { BedDouble, Crosshair, Crown, Gift, ShoppingBag, Skull, Sparkles, Swords } from "lucide-react";
 import { nodeLabel } from "@/lib/cards/map";
 import { cn } from "@/lib/client/cn";
 import type { CardMap, CardNode, CardRunView } from "@/lib/cards/types";
@@ -8,6 +8,7 @@ import type { CardMap, CardNode, CardRunView } from "@/lib/cards/types";
 const ICONS = {
   battle: Swords,
   elite: Skull,
+  hunt: Crosshair,
   event: Sparkles,
   rest: BedDouble,
   shop: ShoppingBag,

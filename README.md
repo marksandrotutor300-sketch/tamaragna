@@ -73,7 +73,8 @@ The service worker is intentionally disabled in `next dev`; test installability 
   equipped skills form a 12-card deck, and branching runs add cards, relics, shops, rests and
   events across Verdant, Ember and Astral acts. Server-authoritative turn actions, resumable
   runs, capped rewards and card quests. Advanced upgrades include A0–A5 Ascension, Signature
-  card fusion, evolved relics, five Rift Paths and permanent Rift Edicts.
+  card fusion, evolved relics, five Rift Paths, permanent Rift Edicts, Champion Ascension,
+  card runes, relic sets, Rift Contracts and Elite Hunts.
 - **Async PvP.** Fight snapshots of other players' teams with placements, seasonal tiers,
   rewards and rating history.
 - **Tamagotchi care.** Hunger, mood, energy and friendship decay in real time (capped at
@@ -136,7 +137,7 @@ Postgres or embedded PGlite · TanStack Query · Serwist (PWA) · Vitest.
 | --- | --- |
 | `npm run dev` | Dev server (generates game data first if missing) |
 | `npm run build` / `npm start` | Production build and server |
-| `npm test` | 105 unit tests: engine, genetics, sharing, telemetry, evolution, mastery, live tickets, expeditions, habitats, legacy, stat overrides, CSRF origin, Rift Deck cards/upgrades |
+| `npm test` | 111 unit tests: engine, genetics, sharing, telemetry, evolution, mastery, live tickets, expeditions, habitats, legacy, stat overrides, CSRF origin, Rift Deck cards/upgrades |
 | `npm run balance` | Headless battle pacing sweep |
 | `npm run smoke` | End-to-end API + server replay check (server must be running) |
 | `npm run smoke:pvp` | Two-account matchmaking, replay and Elo check |

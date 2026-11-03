@@ -12,8 +12,9 @@ import {
   RewardPanel,
   RunResult,
   ShopPanel,
+  ContractsPanel,
 } from "@/components/cards/RunPanels";
-import { useAbandonCardRun, useCardEvent, useCardRun, useClaimCardReward, useEnterCardNode, useRestCardRun, useShopCardRun, useStartCardRun } from "@/hooks/useCards";
+import { useAbandonCardRun, useCardEvent, useCardRun, useClaimCardReward, useClaimContract, useEnterCardNode, useRestCardRun, useShopCardRun, useStartCardRun } from "@/hooks/useCards";
 import { getEdict } from "@/lib/cards/content/edicts";
 import { getRiftPath } from "@/lib/cards/content/paths";
 import { cn } from "@/lib/client/cn";
@@ -28,6 +29,7 @@ export default function CardRunPage() {
   const rest = useRestCardRun(runId);
   const shop = useShopCardRun(runId);
   const event = useCardEvent(runId);
+  const contract = useClaimContract(runId);
   const abandon = useAbandonCardRun(runId);
   const start = useStartCardRun();
 
@@ -41,7 +43,7 @@ export default function CardRunPage() {
 
   const run = data.run;
   const busy =
-    enter.isPending || claim.isPending || rest.isPending || shop.isPending || event.isPending;
+    enter.isPending || claim.isPending || rest.isPending || shop.isPending || event.isPending || contract.isPending;
 
   if (run.status === "won" || run.status === "lost" || run.status === "abandoned") {
     if (run.pending?.kind === "reward") {
@@ -108,6 +110,12 @@ export default function CardRunPage() {
         })}
       </div>
 
+      <ContractsPanel
+        run={run}
+        busy={contract.isPending}
+        onClaim={(contractId) => contract.mutate(contractId)}
+      />
+
       {run.relicDefinitions.length > 0 ? (
         <Panel>
           <SectionTitle hint={`${run.relicDefinitions.length} relics`}>Relics</SectionTitle>
@@ -142,6 +150,7 @@ export default function CardRunPage() {
           onHeal={() => rest.mutate({ choice: "heal" })}
           onUpgrade={(instanceId) => rest.mutate({ choice: "upgrade", instanceId })}
           onSignature={(instanceId) => rest.mutate({ choice: "signature", instanceId })}
+          onAscend={(petId) => rest.mutate({ choice: "ascend", petId })}
         />
       ) : null}
 
@@ -153,6 +162,7 @@ export default function CardRunPage() {
           onBuy={(kind, id) => shop.mutate({ action: "buy", kind, id })}
           onRemove={(instanceId) => shop.mutate({ action: "remove", instanceId })}
           onEvolve={(relicId) => shop.mutate({ action: "evolve", relicId })}
+          onInscribe={(instanceId, runeId) => shop.mutate({ action: "inscribe", instanceId, runeId })}
           onLeave={() => shop.mutate({ action: "leave" })}
         />
       ) : null}
@@ -190,7 +200,7 @@ export default function CardRunPage() {
         <SectionTitle hint={`${run.deckCards.length}/40 cards`}>Deck</SectionTitle>
         <div className="flex gap-2 overflow-x-auto pb-1">
           {run.deckCards.map((card) => (
-            <CardFace key={card.instanceId} definition={card.definition} compact />
+            <CardFace key={card.instanceId} definition={card.definition} rune={card.rune} compact />
           ))}
         </div>
       </Panel>

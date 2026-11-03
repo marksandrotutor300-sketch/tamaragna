@@ -116,7 +116,7 @@ export function useClaimCardReward(runId: string) {
 export function useRestCardRun(runId: string) {
   const invalidate = useCardInvalidation();
   return useMutation({
-    mutationFn: (body: { choice: "heal" | "upgrade" | "signature"; instanceId?: string }) =>
+    mutationFn: (body: { choice: "heal" | "upgrade" | "signature" | "ascend"; instanceId?: string; petId?: string }) =>
       api.post<{ run: CardRunView }>(`/api/cards/runs/${runId}/rest`, body),
     onSuccess: invalidate,
   });
@@ -130,7 +130,8 @@ export function useShopCardRun(runId: string) {
         | { action: "leave" }
         | { action: "buy"; kind: "card" | "relic"; id: string }
         | { action: "remove"; instanceId: string }
-        | { action: "evolve"; relicId: string },
+        | { action: "evolve"; relicId: string }
+        | { action: "inscribe"; instanceId: string; runeId: string },
     ) => api.post<{ run: CardRunView }>(`/api/cards/runs/${runId}/shop`, body),
     onSuccess: invalidate,
   });
@@ -141,6 +142,15 @@ export function usePurchaseEdict() {
   return useMutation({
     mutationFn: (id: string) =>
       api.post<{ essence: number; edicts: string[] }>("/api/cards/edicts", { id }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useClaimContract(runId: string) {
+  const invalidate = useCardInvalidation();
+  return useMutation({
+    mutationFn: (contractId: string) =>
+      api.post<{ run: CardRunView }>(`/api/cards/runs/${runId}/contracts`, { contractId }),
     onSuccess: invalidate,
   });
 }

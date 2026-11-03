@@ -30,10 +30,13 @@ import {
   rewardSummary,
 } from "@/lib/cards/run";
 import { buildEncounter } from "@/lib/cards/content/enemies";
-import { addCard, removeCard, signatureInstance, upgradeInstance } from "@/lib/cards/deck";
+import { addCard, inscribeInstance, removeCard, signatureInstance, upgradeInstance } from "@/lib/cards/deck";
 import { cardForInstance, getCard } from "@/lib/cards/content/cards";
-import { getRelic, evolveRelicId, isEvolvedRelic, relicPoolForAct } from "@/lib/cards/content/relics";
+import { getRune } from "@/lib/cards/content/runes";
+import { getRelic, evolveRelicId, isEvolvedRelic, relicPoolForAct, syncRelicSets } from "@/lib/cards/content/relics";
 import { getEvent } from "@/lib/cards/content/events";
+import { advanceContracts } from "@/lib/cards/content/contracts";
+import { ultimateForElement } from "@/lib/cards/content/ultimate-cards";
 import { allRiftPaths, getRiftPath } from "@/lib/cards/content/paths";
 import { allEdicts, getEdict, hasEdict } from "@/lib/cards/content/edicts";
 import { isNodeReachable, nodeById } from "@/lib/cards/map";
@@ -62,6 +65,7 @@ function asRunData(row: CardRun): CardRunData {
     ascension: row.ascension,
     path: row.path,
     edicts: row.edicts,
+    contracts: row.contracts,
     pending: row.pending ?? null,
     score: row.score,
     elapsedMs: row.elapsedMs,
@@ -163,6 +167,7 @@ export async function startCardRun(
   if (hasEdict(edicts, "relic-seeker")) {
     const relic = relicPoolForAct(1)[new Rng(`edict-seeker:${seed}`).int(0, relicPoolForAct(1).length - 1)];
     if (relic) data.relics = [relic.id];
+  data.relics = syncRelicSets(data.relics);
   }
 
   const inserted = await db
@@ -182,6 +187,7 @@ export async function startCardRun(
       ascension: data.ascension,
       path: data.path,
       edicts: data.edicts,
+      contracts: data.contracts,
       pending: null,
       score: 0,
       elapsedMs: 0,
@@ -324,9 +330,13 @@ export async function enterCardNode(
     return { run: viewForRow(row), battle: battleView(existing[0]) };
   }
 
-  if (node.type === "battle" || node.type === "elite" || node.type === "boss") {
-    const kind = node.type === "boss" ? "boss" : node.type === "elite" ? "elite" : "normal";
-    const enemies = buildEncounter(run.seed, run.act, kind, node.floor, encounterMods(run, kind === "boss"));
+  if (node.type === "battle" || node.type === "elite" || node.type === "hunt" || node.type === "boss") {
+    const kind = node.type === "boss" ? "boss" : node.type === "elite" || node.type === "hunt" ? "elite" : "normal";
+    const baseMods = encounterMods(run, kind === "boss");
+    const enemies = buildEncounter(run.seed, run.act, kind, node.floor, {
+      hpMultiplier: baseMods.hpMultiplier * (node.type === "hunt" ? 1.2 : 1),
+      damageMultiplier: baseMods.damageMultiplier * (node.type === "hunt" ? 1.1 : 1),
+    });
     const battleSeed = checksum(`${run.seed}:${node.id}`);
     const state = createCardBattle({
       seed: battleSeed,
@@ -415,7 +425,15 @@ export async function actOnCardBattle(
     let battleStatus = battle.status;
     let pending: PendingNode | null = run.pending;
     let scoreRun = run;
+    let contracts = run.contracts ?? [];
     let reward: ReturnType<typeof rewardSummary> | null = null;
+
+    if (action.kind === "playCard") {
+      contracts = advanceContracts(contracts, "card_play", 1);
+    }
+    if (state.events.some((event) => event.type === "faint")) {
+      contracts = advanceContracts(contracts, "champion_fell", 1);
+    }
 
     if (state.phase === "lost") {
       scoreRun = lossRun({ ...run, champions: state.champions, pending: null });
@@ -426,11 +444,18 @@ export async function actOnCardBattle(
       const node = nodeById(run.map, battle.nodeId);
       if (node) {
         const runGold =
-          node.type === "boss" ? 40 : node.type === "elite" ? 20 : 10;
+          node.type === "boss" ? 40 : node.type === "hunt" ? 30 : node.type === "elite" ? 20 : 10;
         const goldBonus = run.relics.reduce(
           (sum, id) => sum + (getRelic(id)?.effect.goldBonus ?? 0),
           0,
         );
+        contracts = advanceContracts(contracts, "battle_win", 1);
+        if (node.type === "elite") contracts = advanceContracts(contracts, "elite", 1);
+        if (node.type === "hunt") contracts = advanceContracts(contracts, "hunt", 1);
+        if (node.type === "boss") {
+          contracts = advanceContracts(contracts, "boss", 1);
+          if (node.act === 2) contracts = advanceContracts(contracts, "act2", 1);
+        }
         const withGold = {
           ...run,
           champions: state.champions,
@@ -465,6 +490,7 @@ export async function actOnCardBattle(
         ),
       };
     }
+    scoreRun = { ...scoreRun, contracts };
 
     const updatedBattle = await tx
       .update(cardBattles)
@@ -492,6 +518,7 @@ export async function actOnCardBattle(
         ascension: scoreRun.ascension,
         path: scoreRun.path,
         edicts: scoreRun.edicts,
+        contracts: scoreRun.contracts,
         pending: scoreRun.pending,
         score: scoreRun.score,
         completedNodeIds: scoreRun.completedNodeIds,
@@ -556,7 +583,7 @@ export async function claimCardReward(
       throw new CardRuleError("That relic is not offered.", 422);
     }
     if (relics.includes(choice.id)) throw new CardRuleError("Relic already owned.", 422);
-    relics = [...relics, choice.id];
+    relics = syncRelicSets([...relics, choice.id]);
   }
 
   const pending = run.pending;
@@ -573,7 +600,7 @@ export async function claimCardReward(
       relics,
       pending: null,
       completedNodeIds: completed,
-      nodeId: advancedAct ? null : (run.nodeId ?? pending.nodeId),
+      nodeId: advancedAct ? null : pending.nodeId,
       score: run.score + (run.completedNodeIds.includes(pending.nodeId) ? 0 : 10),
     })
     .where(eq(cardRuns.id, runId))
@@ -585,7 +612,7 @@ export async function claimCardReward(
 export async function resolveRest(
   profileId: string,
   runId: string,
-  choice: { choice: "heal" | "upgrade" | "signature"; instanceId?: string },
+  choice: { choice: "heal" | "upgrade" | "signature" | "ascend"; instanceId?: string; petId?: string },
 ): Promise<CardRunView> {
   const row = await loadCardRun(profileId, runId);
   const run = asRunData(row);
@@ -605,6 +632,33 @@ export async function resolveRest(
       run.champions,
       Math.max(0, 0.3 + relicBonus + path.restBonus - ascensionPenalty),
     );
+  } else if (choice.choice === "ascend") {
+    if (!choice.petId) throw new CardRuleError("Choose a champion to ascend.", 422);
+    if (run.champions.some((champion) => champion.ascended)) {
+      throw new CardRuleError("A champion has already ascended this run.", 422);
+    }
+    const target = champions.find((champion) => champion.petId === choice.petId);
+    if (!target || target.hp <= 0) throw new CardRuleError("Champion not found.", 422);
+    const ultimate = ultimateForElement(target.element);
+    if (deck.cards.length >= MAX_DECK_SIZE) throw new CardRuleError("Deck is full.", 422);
+    const stats = {
+      ...target.stats,
+      hpMax: Math.round(target.stats.hpMax * 1.2),
+      atk: Math.round(target.stats.atk * 1.2),
+      matk: Math.round(target.stats.matk * 1.2),
+    };
+    const ascended = {
+      ...target,
+      stats,
+      maxHp: stats.hpMax,
+      hp: stats.hpMax,
+      ascended: true,
+      cards: [...target.cards, ultimate.id],
+    };
+    champions = champions.map((champion) =>
+      champion.petId === target.petId ? ascended : champion,
+    );
+    deck = addCard(deck, ultimate.id, target.petId).deck;
   } else if (choice.choice === "signature") {
     if (!choice.instanceId) throw new CardRuleError("Choose a card to forge.", 422);
     const target = deck.cards.find((card) => card.instanceId === choice.instanceId);
@@ -649,7 +703,8 @@ export async function resolveShop(
     | { action: "leave" }
     | { action: "buy"; kind: "card" | "relic"; id: string }
     | { action: "remove"; instanceId: string }
-    | { action: "evolve"; relicId: string },
+    | { action: "evolve"; relicId: string }
+    | { action: "inscribe"; instanceId: string; runeId: string },
 ): Promise<CardRunView> {
   const row = await loadCardRun(profileId, runId);
   const run = asRunData(row);
@@ -693,6 +748,17 @@ export async function resolveShop(
     if (runGold < cost) throw new CardRuleError("Not enough run gold.", 422);
     runGold -= cost;
     relics = relics.map((id) => (id === body.relicId ? evolveRelicId(id) : id));
+    relics = syncRelicSets(relics);
+  } else if (body.action === "inscribe") {
+    const rune = getRune(body.runeId);
+    if (!rune) throw new CardRuleError("Unknown rune.", 422);
+    const target = deck.cards.find((card) => card.instanceId === body.instanceId);
+    if (!target) throw new CardRuleError("Card not found.", 422);
+    if (target.rune) throw new CardRuleError("Card is already inscribed.", 422);
+    const cost = Math.round(rune.cost * (1 - discount));
+    if (runGold < cost) throw new CardRuleError("Not enough run gold.", 422);
+    runGold -= cost;
+    deck = inscribeInstance(deck, target.instanceId, rune.id);
   } else if (body.action === "remove") {
     const cost = Math.round(run.pending.removalCost * (1 - discount));
     if (runGold < cost) throw new CardRuleError("Not enough run gold.", 422);
@@ -714,7 +780,7 @@ export async function resolveShop(
       deck = addCard(deck, option.id, run.champions[0]?.petId ?? "shop").deck;
     } else {
       if (relics.includes(option.id)) throw new CardRuleError("Relic already owned.", 422);
-      relics = [...relics, option.id];
+      relics = syncRelicSets([...relics, option.id]);
     }
     runGold -= cost;
   }
@@ -781,7 +847,7 @@ export async function resolveEvent(
         option.effect.relicId === "random"
           ? randomRelic(run.seed, run.act, relics)
           : getRelic(option.effect.relicId);
-      if (relic && !relics.includes(relic.id)) relics = [...relics, relic.id];
+      if (relic && !relics.includes(relic.id)) relics = syncRelicSets([...relics, relic.id]);
       break;
     }
   }
@@ -817,6 +883,31 @@ function randomRelic(seed: string, act: number, owned: string[]) {
   const pool = relicPoolForAct(act).filter((relic) => !owned.includes(relic.id));
   if (!pool.length) return null;
   return pool[new Rng(`event-relic:${seed}:${act}`).int(0, pool.length - 1)];
+}
+
+export async function claimContract(
+  profileId: string,
+  runId: string,
+  contractId: string,
+): Promise<CardRunView> {
+  const row = await loadCardRun(profileId, runId);
+  const run = asRunData(row);
+  if (run.status !== "active") throw new CardRuleError("This run is over.", 409);
+  const contract = run.contracts.find((entry) => entry.id === contractId);
+  if (!contract) throw new CardRuleError("Contract not found.", 422);
+  if (!contract.completed) throw new CardRuleError("Contract is not complete.", 422);
+  if (contract.claimed) throw new CardRuleError("Contract reward already claimed.", 409);
+  const contracts = run.contracts.map((entry) =>
+    entry.id === contract.id ? { ...entry, claimed: true } : entry,
+  );
+  const db = await getDb();
+  const updated = await db
+    .update(cardRuns)
+    .set({ contracts, runGold: run.runGold + contract.rewardGold })
+    .where(eq(cardRuns.id, runId))
+    .returning();
+  if (!updated[0]) throw new CardRuleError("Could not claim the contract.", 500);
+  return viewForRow(updated[0]);
 }
 
 export async function abandonCardRun(profileId: string, runId: string): Promise<CardRunView> {
